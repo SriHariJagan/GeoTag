@@ -1,0 +1,404 @@
+/* ================= FORM CONTAINER ================= */
+.form {
+  background: var(--color-card);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.section{
+    margin: 20px 0;
+}
+
+
+.form h2 {
+  margin-bottom: 6px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.formSub {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-heading, var(--color-text));
+  margin-bottom: 14px;
+}
+
+.stepNo {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.sectionHint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: -6px 0 14px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.errorMsg {
+  font-size: 12px;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.formError {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ================= TEXTAREA ================= */
+.form textarea {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+}
+
+.form textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* ================= MULTI-SELECT UPGRADES ================= */
+.countBadge {
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.chipAvatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.chip button {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.msFooter {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  position: sticky;
+  top: 0;
+  background: var(--color-surface);
+}
+
+.msFooter button {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.msFooter button:hover {
+  text-decoration: underline;
+}
+
+.msEmpty {
+  padding: 12px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.msItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.msHighlight {
+  background: var(--table-row-hover);
+}
+
+.msCheck {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.msAvatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.msText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.msText strong {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msText small {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msBadge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* ================= PROGRESS PREVIEW ================= */
+.progressPreview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 2px;
+}
+
+.progressPreview span {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-heading, var(--color-text));
+}
+
+.progressTrack {
+  flex: 1;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-info, #0ea5e9));
+  transition: width 0.3s ease;
+}
+
+.dropdown {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+/* ================= GRID LAYOUT ================= */
+.formGrid, .assignmentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.assignmentGrid{
+    margin-top: 20px;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .formGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .form {
+    padding: 16px;
+  }
+}
+
+/* ================= FIELD (LABEL + INPUT) ================= */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+/* ================= FULL WIDTH ================= */
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+/* ================= INPUTS ================= */
+.form input,
+.form select {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form input:focus,
+.form select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* ================= CHIP SELECT ================= */
+.chipSelectBox {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chipSelectBox label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.chipContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  padding: 6px 10px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.chip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+/* ================= DROPDOWN ================= */
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  z-index: 50;
+  margin-top: 4px;
+}
+
+.dropdown div {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dropdown div:hover {
+  background: var(--table-row-hover);
+}
+
+/* ================= SUBMIT BUTTON ================= */
+.submitBtn {
+  margin-top: 24px;
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.submitBtn:hover {
+  background: var(--color-primary-hover);
+}

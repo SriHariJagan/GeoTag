@@ -1,0 +1,2 @@
+report_id,project_id,report_date,supervisor_id,vendor_id,machine_id,site_location,borehole_no,rig_no,type_of_rig,chainage,depth_started,soil_depth,soft_rock_depth,hard_rock_depth,total_depth,hours_worked,manpower_count,weather_condition,work_status,delay_reason
+1,1,2026-01-01,10,5,3,Hyderabad,BH-01,RIG-03,Rotary,0+100,0,4,8,2,14,8,6,clear,working,

@@ -1,0 +1,230 @@
+/* ================================
+   MAIN FORM CONTAINER
+================================ */
+.formContainer {
+  max-width: 1300px;
+  margin: 1px auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  font-family: "Inter", sans-serif;
+}
+
+/* ================================
+   HEADINGS
+================================ */
+h3 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: #1f2937;
+}
+
+h4 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  color: #111827;
+}
+
+/* ================================
+   PROJECT ROW (Dropdown + Info)
+================================ */
+.projectInfoRowFlex {
+  display: flex;
+  gap: 30px;
+  align-items: stretch;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+
+/* Dropdown Box */
+.projectDropdown {
+  flex: 1 1 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.projectDropdown label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+.projectDropdown select {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  background: #f9fafb;
+  transition: all 0.25s ease;
+}
+
+.projectDropdown select:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Project Details Card */
+.projectDetails {
+  flex: 2 1 600px;
+  background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+  padding: 20px 24px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.projectDetails p {
+  margin: 0;
+  font-size: 14px;
+  color: #374151;
+}
+
+.projectDetails b {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* ================================
+   ENTITY BOX (Supervisor / Vendor)
+================================ */
+.entityBox {
+  margin-bottom: 28px;
+  padding: 24px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.entityBox:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.07);
+}
+
+/* ================================
+   GRID LAYOUT (4 Columns)
+================================ */
+.grid4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 10px;
+}
+
+/* Individual Input Block */
+.gridItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.gridItem label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Inputs */
+.gridItem input {
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  transition: all 0.25s ease;
+}
+
+.gridItem input:focus {
+  outline: none;
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Readonly total field */
+.gridItem input[readonly] {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+/* ================================
+   SUPERVISOR & VENDOR NAME BADGES
+================================ */
+.nameBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+/* ================================
+   SUBMIT BUTTON
+================================ */
+.submitBtn {
+  width: 100%;
+  margin-top: 30px;
+  padding: 16px 0;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submitBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(37, 99, 235, 0.35);
+}
+
+.submitBtn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* ================================
+   RESPONSIVE
+================================ */
+@media (max-width: 1024px) {
+  .grid4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .formContainer {
+    padding: 20px;
+  }
+
+  .grid4 {
+    grid-template-columns: 1fr;
+  }
+
+  .projectInfoRowFlex {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,49 @@
+.wrap { display: flex; flex-direction: column; gap: 14px; }
+.steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.step { border: 1px solid #d7e0ea; background: #f4f7fb; color: #33506e; border-radius: 999px; padding: 5px 11px; font-size: 12px; cursor: pointer; }
+.stepActive { background: #0f2a44; border-color: #0f2a44; color: #fff; }
+.stepDone { background: #e6f4ea; border-color: #9fd3ae; color: #1c6b34; }
+.card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; }
+.card h3 { margin: 0 0 4px; color: #0f2a44; }
+.card p.sub { margin: 0 0 12px; color: #5b7288; font-size: 13px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 12px; font-weight: 600; color: #33506e; }
+.field input, .field select, .field textarea { border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.field textarea { resize: vertical; min-height: 70px; }
+.full { grid-column: 1 / -1; }
+.err { color: #b42318; font-size: 12px; }
+.warn { background: #fff7e6; border: 1px solid #f0c36d; color: #7a4b00; border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.hint { color: #5b7288; font-size: 12px; }
+.nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.btn { border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+.btnPrimary { background: #0f2a44; border-color: #0f2a44; color: #fff; }
+.btnDanger { background: #b42318; border-color: #b42318; color: #fff; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th, .tbl td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+.tbl th { background: #0f2a44; color: #fff; }
+.tbl td.num, .tbl th.num { text-align: right; }
+.totals { display: flex; justify-content: flex-end; margin-top: 8px; }
+.totals table { border-collapse: collapse; font-size: 13px; min-width: 260px; }
+.totals td { border: 1px solid #e2e8f0; padding: 6px 10px; }
+.totals td:last-child { text-align: right; }
+.grand td { background: #e8eef4; font-weight: 700; }
+.rowBtns { display: flex; gap: 6px; flex-wrap: wrap; }
+.vendorRow { display: flex; align-items: center; gap: 8px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
+.vendorRow input[type="checkbox"] { width: 16px; height: 16px; }
+.badge { background: #e8eef4; border-radius: 999px; padding: 2px 8px; font-size: 11px; color: #0f2a44; }
+.lockNote { background: #fdecec; border: 1px solid #f0a3a3; color: #7a1f1f; border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 13px; }
+.kv div span { display: block; font-size: 11px; color: #5b7288; text-transform: uppercase; letter-spacing: 0.04em; }
+/* autocomplete */
+.acBox { position: relative; }
+.acInput { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.acDrop { position: absolute; z-index: 30; left: 0; right: 0; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; margin-top: 4px; max-height: 260px; overflow: auto; box-shadow: 0 8px 24px rgba(15,42,68,0.12); }
+.acItem { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; background: #fff; border: 0; border-bottom: 1px solid #eef2f7; padding: 8px 10px; cursor: pointer; font-size: 13px; }
+.acHi { background: #eef4fa; }
+.acSub { color: #5b7288; font-size: 12px; }
+.acBadge { background: #e8eef4; border-radius: 999px; padding: 1px 8px; font-size: 11px; color: #0f2a44; }
+.acEmpty { padding: 10px; font-size: 13px; color: #5b7288; }
+.acCreate { width: 100%; background: #0f2a44; color: #fff; border: 0; padding: 9px 10px; cursor: pointer; font-size: 13px; border-radius: 0 0 8px 8px; }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }

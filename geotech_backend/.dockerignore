@@ -1,0 +1,19 @@
+# geotech_backend build context
+.git
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+venv/
+.venv/
+.env
+*.env
+*.db
+*.bak
+generated_pdfs/
+storage/
+tests/
+scripts/
+.idea/
+.vscode/

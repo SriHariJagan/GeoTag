@@ -1,0 +1,60 @@
+# Root build context — keep images small and secret-free.
+.git
+.gitignore
+**/.git.disabled
+
+# Secrets (compose injects them at runtime via env_file, never baked in).
+# NOTE: bare ".env" only matches the context root, so service-level
+# dev .env files are excluded explicitly too.
+.env
+*.env
+**/.env
+GeoTech-UI/.env
+geotech_backend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+
+# Backend local runtime data (recreated/persisted via volumes on the server)
+geotech_backend/geotech.db
+geotech_backend/*.db
+geotech_backend/*.bak
+geotech_backend/generated_pdfs/
+geotech_backend/storage/
+geotech_backend/tests/
+geotech_backend/scripts/
+
+# Generated ML artefacts (large / gitignored; rebuilt or mounted as needed)
+ml_data/raw/
+ml_data/processed/
+ml_data/models/
+ml_data/reports/
+*.xlsx
+*.xls
+
+# Node / frontend build outputs (rebuilt inside the Docker image)
+node_modules/
+dist/
+.vite/
+GeoTech-UI/node_modules/
+GeoTech-UI/dist/
+GeoTech-UI/src.zip
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor / docs (not needed at runtime)
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.pdf
+*.docx

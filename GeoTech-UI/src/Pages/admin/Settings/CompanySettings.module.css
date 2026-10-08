@@ -1,0 +1,44 @@
+.page { display: flex; flex-direction: column; gap: 14px; }
+.hero {
+  padding: 24px 28px; border-radius: 20px; color: #fff;
+  background: linear-gradient(112deg, #0b1e4e 0%, #14348f 52%, #1d4ed8 100%);
+  box-shadow: 0 18px 44px rgba(20, 52, 143, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+.eyebrow {
+  display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.12em;
+  text-transform: uppercase; background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2); border-radius: 999px; padding: 5px 11px; margin-bottom: 9px;
+}
+.hero h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px; }
+.hero p { color: rgba(255,255,255,0.72); font-size: 13.5px; margin: 0; }
+.card {
+  border-radius: 18px; background: var(--color-card); border: 1px solid var(--color-border);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06); padding: 20px 22px;
+}
+.logoRow { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.logoBox {
+  width: 120px; height: 88px; border-radius: 14px; border: 1px dashed var(--color-border);
+  display: grid; place-items: center; overflow: hidden; background: var(--color-bg);
+  color: var(--color-text-muted); font-size: 12px;
+}
+.logoBox img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.logoBtn {
+  border: 1px solid var(--color-border); background: var(--color-bg); border-radius: 11px;
+  padding: 10px 15px; font-size: 13px; font-weight: 800; cursor: pointer; color: var(--color-text);
+}
+.logoBtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.fld { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 700; color: var(--color-text-muted); }
+.fld input, .fld textarea {
+  border: 1px solid var(--color-border); border-radius: 10px; padding: 9px 11px;
+  font-size: 13px; background: var(--color-bg); color: var(--color-text); outline: none;
+}
+.fld input:focus, .fld textarea:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.13); }
+.full { grid-column: 1 / -1; }
+.saveBtn {
+  margin-top: 14px; height: 42px; padding: 0 20px; border: none; border-radius: 12px;
+  background: var(--color-primary); color: #fff; font-size: 14px; font-weight: 800; cursor: pointer;
+}
+.saveBtn:hover:not(:disabled) { background: var(--color-primary-hover); }
+.saveBtn:disabled { opacity: 0.55; cursor: not-allowed; }

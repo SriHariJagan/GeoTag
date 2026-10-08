@@ -1,0 +1,64 @@
+# Environment files (real credentials must never be committed;
+# only *.example templates belong in Git)
+.env
+.env.*
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+
+# Backend local runtime data (databases, uploads, generated files)
+*.db
+*.bak
+geotech_backend/generated_pdfs/
+geotech_backend/storage/
+geotech_backend/.git.disabled/
+
+# Generated ML artifacts
+ml_data/raw/
+ml_data/processed/
+ml_data/models/
+ml_data/reports/
+*.xlsx
+*.xls
+
+# Node / frontend
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs / temp files
+*.log
+*.tmp
+*.temp
+logs/
+
+# Archives (stale source snapshots, etc.)
+*.zip
+
+# Local uploads
+uploads/
+
+# Docker local overrides
+docker-compose.override.yml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,2 @@
+project_id,project_code,name,location,client_name,planned_start_date,planned_end_date,actual_start_date,actual_end_date,total_boreholes,completed_boreholes,estimated_total_depth,target_depth_per_day,target_boreholes_per_day,project_budget,status
+1,GT-001,Metro Soil Investigation,Hyderabad,Metro Rail,2026-01-01,2026-01-30,2026-01-01,2026-02-04,20,20,600,20,0.7,1200000,completed

@@ -1,0 +1,2 @@
+expenditure_id,project_id,date,supervisor_id,vendor_id,travel,accommodation,da,vehicle_hire,jcb_hydra_other,tractor_trolly_water,local_vehicle_hire,sample_transport,misc,manpower_cost,vendor_cost,grand_total
+1,1,2026-01-01,10,5,1200,2500,800,3000,0,1000,500,700,200,9700,15000,24700

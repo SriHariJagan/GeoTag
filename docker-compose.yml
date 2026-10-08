@@ -1,0 +1,81 @@
+# GeoTech — test/production deployment on a single Linux host.
+#
+#   http://<SERVER_IP>/        -> frontend (Nginx + React SPA)
+#   http://<SERVER_IP>/api/    -> backend  (FastAPI, internal only)
+#
+# Only port 80 is published. The backend, SQLite file, uploads and ML
+# models all live on the internal Docker network / named volumes.
+#
+# First-time setup on the server:
+#   cp .env.example .env     # then edit SECRET_KEY, SUPERADMIN_*, FRONTEND_URL, mail
+#   docker compose build
+#   docker compose up -d
+#   docker compose ps
+#   curl http://localhost/ ; curl http://localhost/api/
+
+name: geotech
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: geotech_backend/Dockerfile
+    container_name: geotech_backend
+    env_file:
+      - .env
+    environment:
+      # Always production inside Docker (dev-only behaviours off,
+      # e.g. OTP values are never printed to logs).
+      ENV: production
+      # SQLite file on the persistent volume (overrides any .env value
+      # so the database can never accidentally point at the container FS).
+      DATABASE_URL: sqlite:////data/geotech.db
+    volumes:
+      - sqlite_data:/data                 # geotech.db lives here
+      - backend_storage:/app/storage      # company logos, signed WO docs
+      - backend_pdfs:/app/generated_pdfs  # generated work-order PDFs
+      - ml_models:/ml_data/models         # trained .pkl files (optional)
+    expose:
+      - "8000"
+    restart: unless-stopped
+    networks:
+      - geotech_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    build:
+      context: .
+      dockerfile: GeoTech-UI/Dockerfile
+      args:
+        # Relative path: the SAME image works behind any server IP/domain.
+        VITE_API_URL: /api
+    container_name: geotech_nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    networks:
+      - geotech_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  sqlite_data:      # SQLite database — survives restarts/rebuilds
+  backend_storage:  # uploaded files — survives restarts/rebuilds
+  backend_pdfs:     # generated PDFs — survives restarts/rebuilds
+  ml_models:        # trained ML models — survives restarts/rebuilds
+
+networks:
+  geotech_net:
+    driver: bridge

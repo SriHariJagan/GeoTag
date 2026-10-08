@@ -1,0 +1,11 @@
+# GeoTech-UI build context
+node_modules/
+dist/
+.vite/
+.env
+*.env.local
+src.zip
+npm-debug.log*
+coverage/
+.idea/
+.vscode/

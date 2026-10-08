@@ -1,0 +1,623 @@
+/* ===============================
+   FORM CONTAINER
+=============================== */
+.formContainer {
+  padding: 28px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border);
+  transition: 0.3s ease;
+}
+
+.formContainer h3 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-heading);
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.formSub {
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 22px;
+}
+
+/* ===============================
+   SECTIONS
+================================ */
+.section {
+  margin-bottom: 24px;
+  padding: 20px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg, transparent);
+  border: 1px solid var(--color-border);
+}
+
+.section h4 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-heading, var(--color-text));
+  margin-bottom: 16px;
+}
+
+.stepNo {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* ===============================
+   FIELDS
+================================ */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.field input,
+.field select,
+.field textarea {
+  padding: 12px 14px;
+  background: var(--input-bg);
+  color: var(--color-text);
+  color-scheme: light;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-family: inherit;
+  transition: 0.25s ease;
+  width: 100%;
+  min-height: 48px;
+  outline: none;
+}
+
+.field input[type="date"],
+.field input[type="time"],
+.field input[type="datetime-local"] {
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.field input[type="date"]::-webkit-calendar-picker-indicator,
+.field input[type="time"]::-webkit-calendar-picker-indicator,
+.field input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  opacity: 0.65;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px;
+  border-radius: 6px;
+}
+
+.field input[type="date"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+/* Dark theme: tell the browser to draw native date/time controls dark. */
+:global([data-theme="dark"]) .field input,
+:global(.dark) .field input {
+  color-scheme: dark;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 6px var(--input-border-focus);
+  background: var(--color-surface);
+}
+
+.field textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.errorMsg {
+  font-size: 12px;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.formError {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ===============================
+   PROJECT INFO PANEL
+================================ */
+.infoPanel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+  .infoPanel {
+    grid-template-columns: 1fr;
+  }
+}
+
+.infoPanel > div {
+  background: var(--color-primary-soft, #eef4ff);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.infoPanel span {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+}
+
+.infoPanel strong {
+  font-size: 14px;
+  color: var(--color-heading, var(--color-text));
+}
+
+/* ===============================
+   PROJECT SNAPSHOT (auto-fetched)
+================================ */
+.snapPanel {
+  margin-top: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-bg, #f8fafc);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.snapHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.snapHead > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.snapHead strong {
+  font-size: 14.5px;
+  color: var(--color-heading, var(--color-text));
+}
+
+.snapHead span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.snapHead em {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.snapFacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.snapFacts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-card, #fff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 10px;
+  padding: 8px 11px;
+  min-width: 0;
+}
+
+.snapFacts span {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.snapFacts strong {
+  font-size: 13px;
+  color: var(--color-heading, var(--color-text));
+}
+
+.snapTeams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.snapTeams > div > span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.snapChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.snapChips i {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.09);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  color: var(--color-heading, var(--color-text));
+}
+
+/* ===============================
+   TOTAL DEPTH BAR
+================================ */
+.totalBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-info, #0ea5e9));
+  color: #fff;
+  font-size: 14px;
+}
+
+.totalBar strong {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* ===============================
+   SEARCHABLE SELECT
+================================ */
+.searchSelectBox {
+  position: relative;
+}
+
+.searchSelectValue {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  min-height: 48px;
+  transition: 0.2s ease;
+}
+
+.searchSelectValue:hover {
+  border-color: var(--color-primary);
+}
+
+.searchSelectValue.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ssPlaceholder {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.ssCaret {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.ssAvatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.ssText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ssText strong {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ssText small {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.searchSelectDrop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  z-index: 60;
+  overflow: hidden;
+}
+
+.searchSelectDrop input {
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--input-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  outline: none;
+}
+
+.ssList {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.ssItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.ssHighlight {
+  background: var(--table-row-hover);
+}
+
+.ssSelected {
+  background: var(--color-primary-soft);
+}
+
+.ssTick {
+  margin-left: auto;
+  color: var(--color-primary);
+  font-weight: 800;
+}
+
+.ssEmpty {
+  padding: 12px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* ===============================
+   GRID — FULLY RESPONSIVE
+   3 → 2 → 1 Columns (roomy fields inside popups)
+================================ */
+.formGrid {
+  display: grid;
+  gap: 18px 20px;
+  width: 100%;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Tablet (2 Columns) */
+@media (max-width: 992px) {
+  .formGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile (1 Column) */
+@media (max-width: 600px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===============================
+   INPUT FIELDS
+=============================== */
+.formGrid input,
+.formGrid select,
+.formGrid textarea {
+  padding: 12px 14px;
+  background: var(--input-bg);
+  color: var(--color-text);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  transition: 0.25s ease;
+  width: 100%;
+  outline: none;
+}
+
+.formGrid input::placeholder,
+.formGrid textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.formGrid input:focus,
+.formGrid select:focus,
+.formGrid textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 6px var(--input-border-focus);
+  background: var(--color-surface);
+}
+
+/* ===============================
+   TEXTAREA 
+=============================== */
+.formGrid textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+/* ===============================
+   FULL ROW INPUT SUPPORT
+=============================== */
+.fullRow {
+  grid-column: span 3;
+}
+
+@media (max-width: 992px) {
+  .fullRow {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 600px) {
+  .fullRow {
+    grid-column: span 1;
+  }
+}
+
+/* ===============================
+   SUBMIT BUTTON
+================================ */
+.submitBtn {
+  margin-top: 22px;
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), #1d4ed8);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.32);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.submitBtn svg {
+  font-size: 18px;
+}
+
+.submitBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow: 0 16px 32px rgba(37, 99, 235, 0.4);
+}
+
+.submitBtn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.3);
+}
+
+.submitBtn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  box-shadow: none;
+}
+
+.submitBtn:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.4);
+  outline-offset: 2px;
+}
+
+.submitBtn:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+/* ===============================
+   DARK MODE FIXES
+=============================== */
+.dark .formContainer {
+  border-color: var(--color-border);
+}
+
+.dark .formGrid input,
+.dark .formGrid select,
+.dark .formGrid textarea {
+  background: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--color-text);
+}
+
+.dark .formGrid input:focus,
+.dark .formGrid select:focus,
+.dark .formGrid textarea:focus {
+  background: var(--color-surface);
+  box-shadow: 0 0 6px var(--input-border-focus);
+}

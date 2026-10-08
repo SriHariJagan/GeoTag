@@ -1,0 +1,261 @@
+*{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+
+html {
+  /* `clip` (not `hidden`) is used deliberately: it suppresses horizontal
+     overflow without creating a scroll container, so `position: sticky`
+     on the navbar keeps working. */
+  overflow-x: clip;
+}
+
+body {
+  overflow-x: clip;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  max-width: 100%;
+}
+
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+
+/* ===========================
+   LIGHT THEME
+=========================== */
+:root {
+  /* Base */
+  --color-bg: #f7f9fc;
+  --color-surface: #ffffff;
+  --color-card: #ffffff;
+  --color-border: #d8dee9;
+
+  /* Text */
+  --color-text: #1a1f25;
+  --color-text-muted: #6b7280;
+  --color-heading: #184096;
+
+  /* Accent (Primary Blue) */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #e0ecff;
+
+  /* Status Colors */
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+
+   --color-danger: #dc3545;
+  --color-danger-text: #b30018;
+
+  --color-danger-bg: rgba(255, 200, 200, 0.45);
+  --color-danger-bg-hover: rgba(255, 170, 170, 0.55);
+
+  --color-danger-border: rgba(220, 53, 69, 0.35);
+
+  /* Shadows */
+  --shadow-card: 0 2px 6px rgba(0,0,0,0.07);
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Table */
+  --table-header-bg: #f1f5f9;
+  --table-row-hover: #f8fafc;
+
+  /* Inputs & Forms */
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --input-border-focus: #2563eb30;
+  --input-bg-disabled: #f1f5f9;
+
+
+    /* Extra Accent Variants */
+  --color-primary-soft: #eef4ff;
+  --color-secondary: #64748b;
+  --color-secondary-hover: #4b5563;
+
+  /* Neutral */
+  --color-neutral-bg: #e6e6e6;
+  --color-neutral-border: #d1d5db;
+
+  /* Info */
+  --color-info: #0ea5e9;
+  --color-info-light: #e0f7ff;
+
+  /* Progress Bars */
+  --progress-active: #2563eb; 
+  --progress-hold: #f59e0b;
+  --progress-complete: #16a34a;
+
+  /* Card Hover */
+  --card-hover-bg: #f9fafb;
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,0.08);
+
+  /* Navbar & Sidebar */
+  --navbar-bg: #ffffff;
+  --navbar-border: #e5e7eb;
+  --sidebar-bg: #ffffff;
+
+  /* Buttons */
+  --btn-secondary-bg: #e5e7eb;
+  --btn-secondary-bg-hover: #d1d5db;
+
+  /* Overlay (Modals) */
+  --overlay-bg: rgba(0,0,0,0.45);
+  --overlay-blur: blur(4px);
+
+  /* Charts */
+  --chart-blue: #3b82f6;
+  --chart-green: #22c55e;
+  --chart-yellow: #facc15;
+  --chart-red: #ef4444;
+  --chart-purple: #8b5cf6;
+
+
+ 
+}
+
+
+/* ===========================
+   DARK THEME
+=========================== */
+.dark {
+  /* Base */
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-card: #1e293b;
+  --color-border: #334155;
+
+  /* Text */
+  --color-text: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-heading: #f8fafc;
+
+  /* Accent */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #1e3a8a;
+
+  /* Status Colors */
+  --color-success: #22c55e;
+  --color-success-light: #134e26;
+
+  --color-warning: #fbbf24;
+  --color-warning-light: #783f04;
+
+   --color-danger: #ff6b6b;
+  --color-danger-text: #ff8585;
+
+  --color-danger-bg: rgba(80, 30, 30, 0.45);
+  --color-danger-bg-hover: rgba(110, 40, 40, 0.55);
+
+  --color-danger-border: rgba(255, 107, 107, 0.35);
+
+  /* Shadows */
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.35);
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Table */
+  --table-header-bg: #1a2435;
+  --table-row-hover: #243144;
+
+  /* Inputs & Forms */
+  --input-bg: #0f172a;
+  --input-border: #475569;
+  --input-border-focus: #3b82f650;
+  --input-bg-disabled: #1e293b;
+
+
+    /* Extra Accent Variants */
+  --color-primary-soft: #1e3a5f;
+  --color-secondary: #94a3b8;
+  --color-secondary-hover: #cbd5e1;
+
+  /* Neutral */
+  --color-neutral-bg: #2b2b2b;
+  --color-neutral-border: #475569;
+
+  /* Info */
+  --color-info: #38bdf8;
+  --color-info-light: #0a2a3b;
+
+  /* Progress Bars */
+  --progress-active: #3b82f6;
+  --progress-hold: #fbbf24;
+  --progress-complete: #22c55e;
+
+  /* Card Hover */
+  --card-hover-bg: #243144;
+  --card-hover-shadow: 0 4px 14px rgba(0,0,0,0.55);
+
+  /* Navbar & Sidebar */
+  --navbar-bg: #1e293b;
+  --navbar-border: #2c3a4e;
+  --sidebar-bg: #162032;
+
+  /* Buttons */
+  --btn-secondary-bg: #334155;
+  --btn-secondary-bg-hover: #475569;
+
+  /* Overlay (Modals) */
+  --overlay-bg: rgba(0,0,0,0.65);
+  --overlay-blur: blur(6px);
+
+  /* Charts */
+  --chart-blue: #60a5fa;
+  --chart-green: #4ade80;
+  --chart-yellow: #facc15;
+  --chart-red: #f87171;
+  --chart-purple: #a78bfa;
+
+}
+
+/* ===== Root Layout ===== */
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg); /* soft admin gray */
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ===== Navbar space handling ===== */
+.layout > nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background-color: var(--navbar-bg);
+  border-bottom: 1px solid var(--navbar-border);
+}
+
+/* ===== Main Content ===== */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+  margin: 0 auto;
+}
