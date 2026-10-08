@@ -50,7 +50,7 @@ yarn-error.log*
 *.log
 *.tmp
 *.temp
-logs/
+/logs/
 
 # Archives (stale source snapshots, etc.)
 *.zip
