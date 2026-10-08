@@ -18,6 +18,10 @@ venv/
 
 # Backend local runtime data (databases, uploads, generated files)
 *.db
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
 *.bak
 geotech_backend/generated_pdfs/
 geotech_backend/storage/
