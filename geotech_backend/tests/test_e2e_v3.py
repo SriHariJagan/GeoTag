@@ -54,6 +54,7 @@ def test_full_business_lifecycle():
     # --- project + supervisor assignment ---
     pid = client.post("/projects/", json={
         "project_code": "E2E3", "date": "2026-09-21", "name": "E2E Full",
+        "project_pan": "ABCDE1234F",
         "client_name": "C", "engineer_in_charge": "E", "location": "L"},
         headers=ADMIN).json()["id"]
     r = client.post("/users/assignments",

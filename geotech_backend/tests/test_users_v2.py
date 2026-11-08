@@ -213,6 +213,7 @@ def test_project_assignment_lifecycle_and_scoping():
     # Create project as admin (minimal required fields)
     proj = {
         "project_code": "TST-001", "date": "2026-09-21", "name": "Test Project",
+        "project_pan": "ABCDE1234F",
         "client_name": "Client", "engineer_in_charge": "Eng", "location": "Hyd",
     }
     r = client.post("/projects/", json=proj, headers=ADMIN)
@@ -330,6 +331,7 @@ def test_e2e_full_lifecycle():
     assert r5.status_code == 200, r5.text
     # project + assign
     proj = {"project_code": "E2E-001", "date": "2026-09-21", "name": "E2E Proj",
+            "project_pan": "ABCDE1234F",
             "client_name": "C", "engineer_in_charge": "E", "location": "L"}
     rp = client.post("/projects/", json=proj, headers=ADMIN)
     assert rp.status_code in (200, 201), rp.text

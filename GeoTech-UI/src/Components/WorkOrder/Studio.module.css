@@ -106,7 +106,15 @@
 }
 
 /* ---------- editor ---------- */
-.editor { display: flex; flex-direction: column; gap: 11px; }
+/* Fill the fixed-height edit pane; otherwise the active section grows past
+   the pane and its body never becomes the scroll region. */
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  flex: 1;
+  min-height: 0;
+}
 .edSec {
   border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-card);
   overflow: hidden; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
@@ -402,8 +410,11 @@
   .split { flex-direction: column; }
   .editPane { max-width: none; flex: 1; width: 100%; }
   .prevPane { position: static; max-height: none; overflow: visible; width: 100%; }
-  .pane { display: none; width: 100%; }
-  .pane.mShow { display: block; }
+  .mPane { display: none; width: 100%; }
+  .mPane.mShow { display: block; }
+  /* keep the edit pane's flex column so the active section body stays the
+     scroll region instead of being clipped by the fixed pane height */
+  .editPane.mShow { display: flex; }
   .mobileTabs { display: flex; }
   .previewWrap { position: static; }
   .dSigGrid { flex-direction: column; }
@@ -1408,6 +1419,8 @@
   vertical-align: top;
 }
 .dBoq .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+/* Keep numeric headings on the same right edge as their values. */
+.dBoq thead th.num { text-align: right; }
 .dBoq tbody td:nth-child(6) { font-weight: 700; color: #111827; }
 
 /* ---- totals: right-aligned, single rule ---- */

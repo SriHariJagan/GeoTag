@@ -286,7 +286,9 @@ export default function DERForm({ initialData, onSubmit }) {
                 <em>{projSnapBusy ? "…" : (projSnap?.status || selectedProject.status || "-")}</em>
               </div>
               <div className={styles.snapFacts}>
-                <div><span>Budget</span><strong>{projSnap?.project_budget != null ? `${Number(projSnap.project_budget).toLocaleString("en-IN")} ${projSnap?.currency || "INR"}` : "-"}</strong></div>
+                {projSnap?.project_budget != null && (
+                  <div><span>Budget</span><strong>{`${Number(projSnap.project_budget).toLocaleString("en-IN")} ${projSnap?.currency || "INR"}`}</strong></div>
+                )}
                 <div><span>Progress</span><strong>{projSnap?.progress ?? selectedProject.progress ?? 0}%</strong></div>
                 <div><span>Boreholes</span><strong>{projSnap?.completed_boreholes ?? 0} / {projSnap?.total_boreholes ?? "-"}</strong></div>
                 <div><span>Schedule</span><strong>{[projSnap?.planned_start_date, projSnap?.planned_end_date].filter(Boolean).join(" → ") || projSnap?.date || selectedProject.date || "-"}</strong></div>

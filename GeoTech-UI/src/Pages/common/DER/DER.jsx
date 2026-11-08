@@ -772,7 +772,9 @@ export default function DER() {
                   ["Client", snapshot.client_name],
                   ["Location", snapshot.location],
                   ["Schedule", [snapshot.planned_start_date, snapshot.planned_end_date].filter(Boolean).join(" → ") || snapshot.date || "-"],
-                  ["Budget", snapshot.project_budget != null ? `${Number(snapshot.project_budget).toLocaleString("en-IN")} ${snapshot.currency || "INR"}` : "-"],
+                  ...(snapshot.project_budget != null
+                    ? [["Budget", `${Number(snapshot.project_budget).toLocaleString("en-IN")} ${snapshot.currency || "INR"}`]]
+                    : []),
                   ["Progress", `${snapshot.progress ?? 0}%`],
                   ["Boreholes", `${snapshot.completed_boreholes ?? 0} / ${snapshot.total_boreholes ?? "-"}`],
                 ].map(([k, v]) => (
@@ -855,12 +857,14 @@ export default function DER() {
                   icon={<FiDollarSign />}
                   type="green"
                 />
-                <StatCard
-                  title="Balance"
-                  value={`${Number(ledger.totals.balance).toLocaleString()} ${ledger.currency}`}
-                  icon={<FiCheckCircle />}
-                  type={Number(ledger.totals.balance) < 0 ? "orange" : "blue"}
-                />
+                {ledger.totals.balance != null && (
+                  <StatCard
+                    title="Balance"
+                    value={`${Number(ledger.totals.balance).toLocaleString()} ${ledger.currency}`}
+                    icon={<FiCheckCircle />}
+                    type={Number(ledger.totals.balance) < 0 ? "orange" : "blue"}
+                  />
+                )}
               </div>
 
               <h4 className={styles.sectionHeading}>Machinery — rate per day × utilized days</h4>

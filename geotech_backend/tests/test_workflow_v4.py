@@ -59,6 +59,7 @@ def wf():
     hb = _link_vendor("v4vendB@example.com", vb["id"])
     r = client.post("/projects/", json={
         "project_code": "V4-GEO-2026-001", "date": "2026-09-21",
+        "project_pan": "ABCDE1234F",
         "name": "V4 Project", "client_name": "V4 Client",
         "engineer_in_charge": "V4 Eng", "location": "V4 Site"}, headers=ADMIN)
     assert r.status_code in (200, 201), r.text
@@ -116,6 +117,7 @@ def test_project_autocomplete_and_selection(wf):
 def test_duplicate_project_and_wo_numbers(wf):
     r = client.post("/projects/", json={
         "project_code": "V4-GEO-2026-001", "date": "2026-09-21", "name": "Dup",
+        "project_pan": "ABCDE1234F",
         "client_name": "C", "engineer_in_charge": "E", "location": "L"},
         headers=ADMIN)
     assert r.status_code == 409, r.text

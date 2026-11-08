@@ -72,6 +72,7 @@ def render_work_order_pdf(db, wo) -> tuple[str, bytes]:
                             leading=11, textColor=muted)
     sCell = ParagraphStyle("WOC", parent=styles["Normal"], fontSize=8.8, leading=11.5)
     sCellH = ParagraphStyle("WOCH", parent=sCell, textColor=colors.white)
+    sRightH = ParagraphStyle("WORH", parent=sCellH, alignment=TA_RIGHT)
     sRight = ParagraphStyle("WOR", parent=sCell, alignment=TA_RIGHT)
     sJust = ParagraphStyle("WOJ", parent=sN, alignment=TA_JUSTIFY)
     sFoot = ParagraphStyle("WOF", parent=styles["Normal"], fontSize=7.8,
@@ -206,8 +207,8 @@ def render_work_order_pdf(db, wo) -> tuple[str, bytes]:
     story.append(Paragraph("Bill of Quantities", sH))
     items = list(wo.items or [])
     header = [Paragraph("<b>S.No.</b>", sCellH), Paragraph("<b>Description</b>", sCellH),
-              Paragraph("<b>Qty</b>", sCellH), Paragraph("<b>Unit</b>", sCellH),
-              Paragraph("<b>Rate</b>", sCellH), Paragraph("<b>Amount</b>", sCellH)]
+              Paragraph("<b>Qty</b>", sRightH), Paragraph("<b>Unit</b>", sCellH),
+              Paragraph("<b>Rate</b>", sRightH), Paragraph("<b>Amount</b>", sRightH)]
     rows = [header]
     for it in items:
         desc = it.description or ""

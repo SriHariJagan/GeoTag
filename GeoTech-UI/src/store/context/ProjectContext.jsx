@@ -5,8 +5,10 @@ import {
   updateProject,
   deleteProject,
 } from "../../api/projects.api";
+import { cached, invalidateQueryCache } from "../../utils/queryCache";
 
 const ProjectContext = createContext();
+const PROJECTS_CACHE_KEY = "projects:mine";
 
 // Normalize project data for forms
 const normalizeProject = (p) => ({
@@ -20,12 +22,17 @@ export const ProjectProvider = ({ children }) => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Load all projects for current user
-  const loadProjects = useCallback(async () => {
+  // Load all projects for current user (cached; pass force to refetch)
+  const loadProjects = useCallback(async ({ force = false } = {}) => {
     try {
       setLoading(true);
-      const res = await getMyProjects();
-      setProjects((res.data || []).map(normalizeProject));
+      const rows = await cached(
+        PROJECTS_CACHE_KEY,
+        () => getMyProjects().then((res) => (res.data || []).map(normalizeProject)),
+        { force }
+      );
+      setProjects(rows);
+      return rows;
     } catch (err) {
       console.error("Failed to load projects", err);
     } finally {
@@ -37,6 +44,7 @@ export const ProjectProvider = ({ children }) => {
   const addProject = async (data) => {
     try {
       const res = await createProject(data);
+      invalidateQueryCache("projects:");
       setProjects((prev) => [...prev, normalizeProject(res.data)]);
     } catch (err) {
       console.error("Failed to add project", err);
@@ -48,6 +56,7 @@ export const ProjectProvider = ({ children }) => {
   const editProject = async (id, data) => {
     try {
       const res = await updateProject(id, data);
+      invalidateQueryCache("projects:");
       setProjects((prev) =>
         prev.map((p) => (p.id === id ? normalizeProject(res.data) : p))
       );
@@ -61,6 +70,7 @@ export const ProjectProvider = ({ children }) => {
   const removeProject = async (id) => {
     try {
       await deleteProject(id);
+      invalidateQueryCache("projects:");
       setProjects((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       console.error("Failed to delete project", err);

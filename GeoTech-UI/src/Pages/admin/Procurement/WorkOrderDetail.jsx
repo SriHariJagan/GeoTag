@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  FiArrowLeft, FiAward, FiCopy, FiDownload, FiEdit2, FiExternalLink,
-  FiFileText, FiMoreVertical, FiPaperclip, FiSend, FiUploadCloud, FiX,
+  FiArrowLeft, FiCopy, FiDownload, FiEdit2, FiExternalLink,
+  FiFileText, FiPaperclip, FiUploadCloud, FiX,
 } from "react-icons/fi";
 import { useAuth } from "../../../store/context/AuthContext";
 import { can, PERMISSIONS } from "../../../constants/permissions";
@@ -10,7 +10,6 @@ import { ROLES } from "../../../constants/roles";
 import Toast from "../../../Components/Toast/Toast";
 import { useToast } from "../../../Components/Toast/useToast";
 import * as api from "../../../api/procurement.api";
-import { assignVendor } from "../../../api/projects.api";
 import { getCompanySettings } from "../../../api/company.api";
 import WoPreview from "../../../Components/WorkOrder/WoPreview";
 import { buildWoView } from "../../../Components/WorkOrder/woView";
@@ -19,27 +18,25 @@ import studio from "../../../Components/WorkOrder/Studio.module.css";
 import styles from "./Procurement.module.css";
 
 const SECTIONS = [
-  { sec: "company", n: 1, label: "Company Letterhead", short: "Letterhead" },
+  { sec: "project", n: 1, label: "Project Particulars", short: "Project" },
   { sec: "info", n: 2, label: "Work Order Number & Date", short: "Number" },
-  { sec: "project", n: 3, label: "Project Particulars", short: "Project" },
-  { sec: "vendor", n: 4, label: "Vendor / Contractor", short: "Vendor" },
-  { sec: "team", n: 5, label: "Project Team", short: "Team" },
-  { sec: "subject", n: 6, label: "Subject & Reference", short: "Subject" },
-  { sec: "scope", n: 7, label: "Scope of Work", short: "Scope" },
-  { sec: "boq", n: 8, label: "Work Items & Pricing", short: "Items" },
-  { sec: "pay", n: 9, label: "Payment Terms", short: "Payment" },
-  { sec: "terms", n: 10, label: "Terms & Conditions", short: "Terms" },
-  { sec: "accept", n: 11, label: "Acceptance Statement", short: "Accept" },
-  { sec: "sig", n: 12, label: "Authorised Signatories", short: "Sign" },
+  { sec: "vendor", n: 3, label: "Vendor / Contractor", short: "Vendor" },
+  { sec: "subject", n: 4, label: "Subject & Reference", short: "Subject" },
+  { sec: "scope", n: 5, label: "Scope of Work", short: "Scope" },
+  { sec: "boq", n: 6, label: "Work Items & Pricing", short: "Items" },
+  { sec: "pay", n: 7, label: "Payment Terms", short: "Payment" },
+  { sec: "terms", n: 8, label: "Terms & Conditions", short: "Terms" },
+  { sec: "signoff", n: 9, label: "Acceptance & Sign-off", short: "Sign-off" },
 ];
 
-const ADMIN_ACTIONS = [
-  ["issue", "Issue (freezes value)"],
-  ["progress", "Start Progress"],
-  ["complete", "Complete"],
-  ["close", "Close"],
-  ["cancel", "Cancel"],
-];
+// Draft-stage records can be edited in place; anything beyond that is amended
+// through an immutable new version (same number, next version).
+const DRAFT_STAGE = new Set(["DRAFT", "IN_REVIEW", "PDF_GENERATED"]);
+const TERMINAL = new Set(["CLOSED", "REJECTED", "CANCELLED"]);
+const CANCELLABLE = new Set([
+  "DRAFT", "IN_REVIEW", "PDF_GENERATED", "SIGNED", "STAMPED", "FINALIZED",
+  "ISSUED", "VIEWED", "ACCEPTED", "IN_PROGRESS",
+]);
 
 export default function WorkOrderDetail() {
   const { id } = useParams();
@@ -58,14 +55,11 @@ export default function WorkOrderDetail() {
   const [upFile, setUpFile] = useState(null);
   const [upType, setUpType] = useState("SIGNED");
   const [verified, setVerified] = useState({});
-  const [tab, setTab] = useState("info");
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [tab, setTab] = useState("project");
   const [pdfOpen, setPdfOpen] = useState(false);
-  const moreRef = useRef(null);
   const pdfRef = useRef(null);
   const prevPaneRef = useRef(null);
 
-  const base = import.meta.env.VITE_API_URL;
   const canIssue = can(user, PERMISSIONS.WORK_ORDER_ISSUE);
   const canSign = can(user, PERMISSIONS.WORK_ORDER_SIGN);
   const isAdmin = canIssue;
@@ -77,7 +71,6 @@ export default function WorkOrderDetail() {
 
   useEffect(() => {
     const onDown = (e) => {
-      if (moreRef.current && !moreRef.current.contains(e.target)) setMoreOpen(false);
       if (pdfRef.current && !pdfRef.current.contains(e.target)) setPdfOpen(false);
     };
     document.addEventListener("mousedown", onDown);
@@ -158,14 +151,36 @@ export default function WorkOrderDetail() {
     }
   };
 
-  const newVersion = async () => {
+  // Amend = edit the live draft, or clone an immutable next version once the
+  // document has left the draft stage (signed/issued records are never edited).
+  const amend = async () => {
+    if (DRAFT_STAGE.has(wo?.status)) {
+      navigate(`/admin/work-orders/create?draft=${wo.id}`);
+      return;
+    }
     setBusy(true);
     try {
-      await api.cloneWoVersion(id);
-      push(`New version created — v${wo.version} untouched`, "success");
-      navigate(`/admin/work-orders/create?draft=${id}`);
+      const res = await api.cloneWoVersion(id);
+      push(`Amendment draft v${res.data.version} created`, "success");
+      navigate(`/admin/work-orders/create?draft=${res.data.id}`);
     } catch (err) {
-      push(err?.response?.data?.detail || "Versioning failed", "error");
+      push(err?.response?.data?.detail || "Amendment failed", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Reuse this work order as a template for the SAME project with a fresh
+  // auto-generated number, so the same vendor can be engaged again with
+  // different requirements without overwriting history.
+  const assignAgain = async () => {
+    setBusy(true);
+    try {
+      const res = await api.duplicateWo(id, wo.project_id);
+      push(`New work order ${res.data.work_order_number} created for this project`, "success");
+      navigate(`/admin/work-orders/create?draft=${res.data.id}`);
+    } catch (err) {
+      push(err?.response?.data?.detail || "Could not create a new work order", "error");
     } finally {
       setBusy(false);
     }
@@ -223,19 +238,36 @@ export default function WorkOrderDetail() {
           <span className={studio.saveState} data-state="saved">
             <i className={studio.dotState} />
             {view.vendor.company || view.project.name || "—"} · {money(wo.grand_total)} {wo.currency}
+            <button
+              type="button"
+              className={studio.linkBtn}
+              onClick={() => navigate(isSupervisor ? `/supervisor/my-projects/${wo.project_id}` : `/admin/projects/${wo.project_id}`)}
+            >
+              Open project
+            </button>
           </span>
         </div>
 
         <div className={studio.barActions}>
-          {isAdmin && !locked && (
-            <button className={studio.btnAccent} onClick={() => navigate(`/admin/work-orders/create?draft=${wo.id}`)}>
-              <FiEdit2 /> Edit
+          {isAdmin && !TERMINAL.has(wo.status) && (
+            <button className={studio.btnAccent} onClick={amend} disabled={busy} title="Amend this draft, or create a new version once issued">
+              <FiEdit2 /> Amendment
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              className={studio.btn}
+              onClick={assignAgain}
+              disabled={busy}
+              title="Save a draft copy of this work order for the same project with a fresh number"
+            >
+              <FiCopy /> Assign again
             </button>
           )}
 
           <div className={studio.menuWrap} ref={pdfRef}>
-            <button className={studio.btn} onClick={() => setPdfOpen(!pdfOpen)}>
-              PDF <FiMoreVertical style={{ display: "none" }} />
+            <button className={studio.btn} onClick={() => setPdfOpen(!pdfOpen)} aria-expanded={pdfOpen}>
+              PDF
               <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 3l4 4 4-4" stroke="currentColor" strokeWidth="1.6" fill="none" /></svg>
             </button>
             {pdfOpen && (
@@ -256,63 +288,10 @@ export default function WorkOrderDetail() {
               </div>
             )}
           </div>
-
-          <div className={studio.menuWrap} ref={moreRef}>
-            <button className={studio.iconBtn} onClick={() => setMoreOpen(!moreOpen)} title="More actions" aria-label="More actions">
-              <FiMoreVertical />
-            </button>
-            {moreOpen && (
-              <div className={`${studio.menu} ${studio.menuRight}`}>
-                {isAdmin && (
-                  <>
-                    <button type="button" disabled={busy} onClick={() => { setMoreOpen(false); act(() => api.reviewWorkOrder(id), "Sent for admin review"); }}>
-                      <FiFileText /> Admin review
-                    </button>
-                    {canSign && !locked && (
-                      <button type="button" disabled={busy} onClick={() => {
-                        setMoreOpen(false);
-                        act(() => api.signWorkOrder(id, sig || undefined), "Signed");
-                      }}><FiEdit2 /> Sign as {sig || "admin"}</button>
-                    )}
-                    {canSign && !locked && (
-                      <button type="button" disabled={busy} onClick={() => {
-                        setMoreOpen(false);
-                        act(() => api.stampWorkOrder(id, stamp || undefined), "Stamped");
-                      }}><FiAward /> Apply stamp</button>
-                    )}
-                    {canSign && !locked && (
-                      <button type="button" disabled={busy} onClick={() => { setMoreOpen(false); act(() => api.finalizeWorkOrder(id), "Finalized & locked"); }}>
-                        <FiFileText /> Finalize &amp; lock
-                      </button>
-                    )}
-                    <button type="button" disabled={busy} onClick={() => {
-                      setMoreOpen(false);
-                      act(() => api.duplicateWo(id).then((r) => {
-                        navigate(`/admin/work-orders/create?draft=${r.data.id}`);
-                        return r;
-                      }), "Duplicated as a new draft");
-                    }}><FiCopy /> Duplicate as new</button>
-                    <button type="button" disabled={busy} onClick={() => { setMoreOpen(false); newVersion(); }}>
-                      <FiCopy /> New version
-                    </button>
-                    {wo.vendor_id && (
-                      <button type="button" disabled={busy} onClick={() => {
-                        setMoreOpen(false);
-                        act(() => assignVendor(wo.project_id, wo.vendor_id), "Vendor assigned to project");
-                      }}><FiSend /> Assign vendor to project</button>
-                    )}
-                  </>
-                )}
-                <button type="button" onClick={() => { setMoreOpen(false); navigate(isSupervisor ? `/supervisor/my-projects/${wo.project_id}` : `/admin/projects/${wo.project_id}`); }}>
-                  <FiExternalLink /> Open project
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </header>
 
-      {locked && <div className={studio.lockBar}>Locked — this version is preserved as issued. Use “New version” to make changes.</div>}
+      {locked && <div className={studio.lockBar}>Locked — this version is preserved as issued. Use “Amendment” to create the next version.</div>}
 
       {/* ---------------- split workspace ---------------- */}
       <div className={studio.split}>
@@ -345,28 +324,6 @@ export default function WorkOrderDetail() {
             </div>
 
             <div className={studio.edBody}>
-              {tab === "company" && (
-                <div className={studio.companyCard}>
-                  {company.logo_url ? (
-                    <img src={`${base}/company-settings/logo`} alt="Company logo" />
-                  ) : (
-                    <span className={studio.companyMonogram}>{(company.company_name || "C").charAt(0)}</span>
-                  )}
-                  <div className={studio.companyCardMain}>
-                    <strong>{company.company_name || "—"}</strong>
-                    {company.tagline && <em>{company.tagline}</em>}
-                    <span>{[company.address_line1, company.address_line2].filter(Boolean).join(", ")}</span>
-                    <span>{[company.city, company.state, company.pin].filter(Boolean).join(", ")}</span>
-                    <span>{[company.phone, company.email, company.website].filter(Boolean).join("  |  ")}</span>
-                    {(company.gstin || company.pan) && (
-                      <span className={studio.companyTax}>
-                        {[company.gstin && `GSTIN ${company.gstin}`, company.pan && `PAN ${company.pan}`].filter(Boolean).join("  ·  ")}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {tab === "info" && (
                 <>
                   <R label="Number" value={wo.work_order_number} />
@@ -421,23 +378,6 @@ export default function WorkOrderDetail() {
                       onReject={(vid, reason) => act(() => api.respondWorkOrder(id, vid, false, reason), "Rejection recorded")}
                     />
                   )}
-                </>
-              )}
-
-              {tab === "team" && (
-                <>
-                  <div className={studio.fieldNote}>
-                    Supervisors and machinery selected on this work order are assigned to the project
-                    automatically when the vendor accepts.
-                  </div>
-                  <R label="Supervisors" value={(view.team_supervisors || []).length ? `${(view.team_supervisors || []).length} assigned` : "None"} />
-                  {(view.team_machines || []).map((m) => (
-                    <R
-                      key={m.machine_id}
-                      label={m.machine_name || `Machine #${m.machine_id}`}
-                      value={m.rate_per_day ? `${money(m.rate_per_day)} / day` : "No rate set"}
-                    />
-                  ))}
                 </>
               )}
 
@@ -537,12 +477,14 @@ export default function WorkOrderDetail() {
                 </>
               )}
 
-              {tab === "accept" && (
-                <p className={studio.dReadPara}>{wo.acceptance_text || "—"}</p>
-              )}
-
-              {tab === "sig" && (
+              {tab === "signoff" && (
                 <>
+                  <div className={studio.group}>
+                    <div className={studio.groupHead}><span>Acceptance statement</span></div>
+                    <div className={studio.groupBody}>
+                      <p className={studio.dReadPara}>{wo.acceptance_text || "—"}</p>
+                    </div>
+                  </div>
                   <R label="Company signatory" value={wo.signer_name} sub={wo.signer_designation} />
                   <R label="Signed at" value={wo.signed_at ? new Date(wo.signed_at).toLocaleString() : ""} />
                   <R label="Stamp" value={wo.stamp_data || "Not stamped"} />
@@ -570,43 +512,154 @@ export default function WorkOrderDetail() {
         </div>
       </div>
 
-      {/* ---------------- admin actions ---------------- */}
+      {/* ---------------- status-driven actions ---------------- */}
       {(isAdmin || canSign) && (
         <div className={styles.contentCard}>
           <div className={styles.tableHeader}>
             <div>
-              <h3>Admin actions</h3>
-              <p>Review, sign, stamp, send to vendors and move the work order through its lifecycle</p>
+              <h3>Work order actions</h3>
+              <p>
+                Only the next valid step for <b>{wo.status || "DRAFT"}</b> is shown.
+                The document flows draft → review → PDF → sign → stamp → finalize → issue.
+              </p>
             </div>
           </div>
 
           {isAdmin && (
             <>
-              <div className={styles.inlineForm}>
-                <VendorInvitePicker
-                  excludeIds={(invites || []).map((v) => v.vendor_id).filter(Boolean)}
-                  busy={busy}
-                  onSend={(ids) => act(() => api.sendWorkOrder(id, ids), "Work order sent to vendors")}
-                />
-              </div>
-              <div className={styles.inlineForm}>
-                {ADMIN_ACTIONS.map(([a, label]) => (
-                  <button key={a} className={styles.rowBtn} disabled={busy} onClick={() => act(() => api[`${a}WorkOrder`](id), `${label} done`)}>
-                    {label}
+              {wo.status === "DRAFT" && (
+                <div className={styles.inlineForm}>
+                  <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy} onClick={() => act(() => api.reviewWorkOrder(id), "Sent for admin review")}>
+                    Submit for review
                   </button>
-                ))}
-              </div>
-            </>
-          )}
+                  <button className={styles.rowBtn} disabled={busy} onClick={() => act(() => api.generateWorkOrderPdf(id), "PDF generated")}>
+                    <FiFileText /> Generate PDF
+                  </button>
+                  <button className={styles.rowBtn} disabled={busy} onClick={() => act(() => api.issueWorkOrder(id), "Issued directly")}>
+                    Issue directly
+                  </button>
+                  <span className={styles.workflowNote}>Direct issue skips review, signature and stamp — use it only for legacy/urgent orders.</span>
+                </div>
+              )}
 
-          {canSign && !locked && (
-            <div className={styles.inlineForm}>
-              <input placeholder="Signature name" value={sig} onChange={(e) => setSig(e.target.value)} />
-              <button className={styles.rowBtn} disabled={busy} onClick={() => act(() => api.signWorkOrder(id, sig || undefined), "Signed")}>Sign</button>
-              <input placeholder="Stamp / seal" value={stamp} onChange={(e) => setStamp(e.target.value)} />
-              <button className={styles.rowBtn} disabled={busy} onClick={() => act(() => api.stampWorkOrder(id, stamp || undefined), "Stamped")}>Stamp</button>
-              <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy} onClick={() => act(() => api.finalizeWorkOrder(id), "Finalized & locked")}>Finalize</button>
-            </div>
+              {wo.status === "IN_REVIEW" && (
+                <div className={styles.inlineForm}>
+                  <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy} onClick={() => act(() => api.generateWorkOrderPdf(id), "PDF generated")}>
+                    <FiFileText /> Generate PDF
+                  </button>
+                  <span className={styles.workflowNote}>The generated PDF is the copy that gets signed and stamped.</span>
+                </div>
+              )}
+
+              {wo.status === "PDF_GENERATED" && (
+                <div className={styles.inlineForm}>
+                  <input
+                    placeholder="Signer name (defaults to your email)"
+                    value={sig}
+                    onChange={(e) => setSig(e.target.value)}
+                  />
+                  <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy} onClick={() => act(() => api.signWorkOrder(id, sig || undefined), "Signed")}>
+                    Sign work order
+                  </button>
+                </div>
+              )}
+
+              {wo.status === "SIGNED" && (
+                <div className={styles.inlineForm}>
+                  <input
+                    placeholder="Stamp / seal (defaults to COMPANY SEAL)"
+                    value={stamp}
+                    onChange={(e) => setStamp(e.target.value)}
+                  />
+                  <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy} onClick={() => act(() => api.stampWorkOrder(id, stamp || undefined), "Stamped")}>
+                    Apply stamp
+                  </button>
+                </div>
+              )}
+
+              {wo.status === "STAMPED" && (
+                <div className={styles.inlineForm}>
+                  <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy} onClick={() => act(() => api.finalizeWorkOrder(id), "Finalized & locked")}>
+                    Finalize &amp; lock
+                  </button>
+                  <span className={styles.workflowNote}>Finalizing snapshots the master data and locks this version.</span>
+                </div>
+              )}
+
+              {wo.status === "FINALIZED" && (
+                <div className={styles.inlineForm}>
+                  <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy} onClick={() => act(() => api.issueWorkOrder(id), "Issued to vendor")}>
+                    Issue to vendor
+                  </button>
+                </div>
+              )}
+
+              {(wo.status === "ISSUED" || wo.status === "VIEWED") && (
+                <div className={styles.inlineForm}>
+                  <span className={styles.workflowNote}>Awaiting the vendor&apos;s response. Record acceptance or decline on the Vendor tab.</span>
+                  <button className={styles.rowBtn} onClick={() => setTab("vendor")}>
+                    Review vendor response
+                  </button>
+                </div>
+              )}
+
+              {wo.status === "ACCEPTED" && (
+                <div className={styles.inlineForm}>
+                  <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy} onClick={() => act(() => api.progressWorkOrder(id), "Work started")}>
+                    Start progress
+                  </button>
+                </div>
+              )}
+
+              {wo.status === "IN_PROGRESS" && (
+                <div className={styles.inlineForm}>
+                  <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy} onClick={() => act(() => api.completeWorkOrder(id), "Marked complete")}>
+                    Mark complete
+                  </button>
+                </div>
+              )}
+
+              {wo.status === "COMPLETED" && (
+                <div className={styles.inlineForm}>
+                  <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy} onClick={() => act(() => api.closeWorkOrder(id), "Work order closed")}>
+                    Close work order
+                  </button>
+                </div>
+              )}
+
+              {TERMINAL.has(wo.status) && (
+                <p className={styles.hint}>
+                  This work order is {(wo.status || "").toLowerCase()}. History is preserved — use “Assign again” to create a fresh work order on the same project.
+                </p>
+              )}
+
+              {CANCELLABLE.has(wo.status) && (
+                <div className={styles.inlineForm}>
+                  <button
+                    className={`${styles.rowBtn} ${styles.rowBtnDanger}`}
+                    disabled={busy}
+                    onClick={() => {
+                      if (window.confirm("Cancel this work order? This cannot be undone.")) {
+                        act(() => api.cancelWorkOrder(id), "Work order cancelled");
+                      }
+                    }}
+                  >
+                    Cancel work order
+                  </button>
+                </div>
+              )}
+
+              {!TERMINAL.has(wo.status) && wo.status !== "COMPLETED" && (
+                <div className={styles.inlineForm}>
+                  <span className={styles.workflowNote}>Send to vendors — they can only reply after receiving it.</span>
+                  <VendorInvitePicker
+                    excludeIds={(invites || []).map((v) => v.vendor_id).filter(Boolean)}
+                    busy={busy}
+                    onSend={(ids) => act(() => api.sendWorkOrder(id, ids), "Work order sent to vendors")}
+                  />
+                </div>
+              )}
+            </>
           )}
 
           {locked && (
@@ -674,7 +727,6 @@ export default function WorkOrderDetail() {
             <button className={`${styles.rowBtn} ${styles.rowBtnPrimary}`} disabled={busy || !upFile} onClick={uploadSigned}>
               Upload Signed Document
             </button>
-            <button className={styles.rowBtn} disabled={busy} onClick={newVersion}>Create New Version</button>
           </div>
         )}
 

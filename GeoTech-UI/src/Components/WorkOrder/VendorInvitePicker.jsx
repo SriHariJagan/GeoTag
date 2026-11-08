@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FiSearch, FiSend, FiX, FiCheck } from "react-icons/fi";
 import { getVendors } from "../../api/vendors.api";
+import { cached, queryKey } from "../../utils/queryCache";
 import styles from "./VendorInvitePicker.module.css";
 
 const vendorLabel = (v) =>
@@ -39,8 +40,13 @@ export default function VendorInvitePicker({ excludeIds = [], busy = false, onSe
       setLoading(true);
       try {
         const q = query.trim();
-        const res = await getVendors(q ? { search: q, limit: 20 } : { limit: 20 });
-        if (!cancelled) setOptions(res.data || []);
+        const params = q ? { search: q, limit: 50 } : { limit: 50 };
+        const rows = await cached(
+          queryKey("vendors:list", params),
+          () => getVendors(params).then((res) => res.data || []),
+          { ttl: 30_000 }
+        );
+        if (!cancelled) setOptions(rows);
       } catch {
         if (!cancelled) setOptions([]);
       } finally {

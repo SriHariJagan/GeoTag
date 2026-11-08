@@ -425,7 +425,8 @@ def _project_feature_row(
     }
 
 
-def get_cost_risk(db: Session, project_id: int) -> dict | None:
+def get_cost_risk(db: Session, project_id: int, *,
+                  include_budget: bool = True) -> dict | None:
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         return None
@@ -528,7 +529,8 @@ def get_cost_risk(db: Session, project_id: int) -> dict | None:
         "reasons": reasons,
         "metrics": {
             "spent": round(spent, 2),
-            "budget": round(budget, 2),
+            # Budget is commercial-in-confidence: null for supervisors.
+            "budget": round(budget, 2) if include_budget else None,
             "progress_percent": round(progress_percent, 2),
             "category_totals": {k: round(v, 2) for k, v in totals.items()},
             "model_used": bool(model_output),

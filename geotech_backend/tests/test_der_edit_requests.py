@@ -24,6 +24,7 @@ def _supervisor(email):
 def _project(code):
     r = client.post("/projects/", json={
         "project_code": code, "date": "2026-09-21", "name": "ER " + code,
+        "project_pan": "ABCDE1234F",
         "client_name": "C", "engineer_in_charge": "E", "location": "L"}, headers=ADMIN)
     assert r.status_code == 200, r.text
     return r.json()["id"]

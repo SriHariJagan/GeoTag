@@ -109,6 +109,11 @@ SQLITE_COLUMNS = {
         "project_type": "VARCHAR",
         "priority": "VARCHAR",
         "currency": "VARCHAR DEFAULT 'INR'",
+        "project_pan": "VARCHAR",
+        "project_gst": "VARCHAR",
+        "number_of_rigs": "INTEGER DEFAULT 0",
+        "rig_types": "TEXT",
+        "area_of_working": "TEXT",
     },
     # --- V3: supervisor assignment extensions ---
     "project_assignments": {

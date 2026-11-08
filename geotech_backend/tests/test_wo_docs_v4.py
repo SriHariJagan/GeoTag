@@ -54,6 +54,7 @@ def dw():
     sup = _mkuser("d5sup@example.com")
     r = client.post("/projects/", json={
         "project_code": "D5-GEO-001", "date": "2026-09-21", "name": "D5 Project",
+        "project_pan": "ABCDE1234F",
         "client_name": "D5 Client", "engineer_in_charge": "E", "location": "D5 Site"},
         headers=ADMIN)
     assert r.status_code in (200, 201), r.text

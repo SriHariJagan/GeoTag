@@ -20,7 +20,62 @@ def _to_response(vendor) -> dict:
     data = {c.name: getattr(vendor, c.name) for c in vendor.__table__.columns}
     data["project_names"] = project_names
     data["compliance_overdue"] = _compliance_overdue(vendor)
+    data["contacts"] = [
+        {
+            "id": c.id,
+            "vendor_id": c.vendor_id,
+            "name": c.name,
+            "designation": c.designation,
+            "email": c.email,
+            "phone": c.phone,
+            "alternate_phone": c.alternate_phone,
+            "is_primary": bool(c.is_primary),
+        }
+        for c in sorted(vendor.contacts or [],
+                        key=lambda c: (not c.is_primary, c.id or 0))
+    ]
     return data
+
+
+def _prepare_contacts(contacts) -> list[dict]:
+    """Validate contact rows and guarantee exactly one primary when supplied."""
+    rows = [
+        (c.model_dump() if hasattr(c, "model_dump") else dict(c))
+        for c in (contacts or [])
+    ]
+    if not rows:
+        return []
+    for row in rows:
+        row["name"] = (row.get("name") or "").strip()
+        if not row["name"]:
+            raise HTTPException(status_code=422, detail="Contact name is required")
+    primaries = [row for row in rows if row.get("is_primary")]
+    if len(primaries) > 1:
+        raise HTTPException(status_code=422,
+                            detail="Only one vendor contact can be primary")
+    if not primaries:
+        rows[0]["is_primary"] = True
+    return rows
+
+
+def _sync_legacy_contact(vendor, contacts, *, replace: bool = False) -> None:
+    """Mirror the primary contact onto the legacy single-contact columns.
+
+    ``replace`` clears a legacy value when the new primary lacks it (used after
+    deleting/replacing a primary contact so stale details cannot linger).
+    """
+    primary = next((c for c in contacts if c.get("is_primary")), None)
+    if not primary:
+        return
+
+    def pick(key, current):
+        return (primary.get(key) or None) if replace else (primary.get(key) or current)
+
+    vendor.contact_person = pick("name", vendor.contact_person)
+    vendor.phone = pick("phone", vendor.phone)
+    vendor.email = pick("email", vendor.email)
+    vendor.contact_designation = pick("designation", vendor.contact_designation)
+    vendor.alternate_phone = pick("alternate_phone", vendor.alternate_phone)
 
 
 # ---------------- CREATE ----------------
@@ -41,11 +96,15 @@ def create_vendor(db: Session, data: schemas.VendorCreate, actor_id: int | None 
     if not data.vendor_code:
         data = data.model_copy(update={"vendor_code": _next_vendor_code(db)})
     payload = data.model_dump()
+    contact_rows = _prepare_contacts(payload.pop("contacts", []))
     # Backfill: legal name defaults to legacy company field
     if not payload.get("legal_business_name") and payload.get("vendor_company"):
         payload["legal_business_name"] = payload["vendor_company"]
     vendor = models.Vendor(**payload)
     db.add(vendor)
+    _sync_legacy_contact(vendor, contact_rows)
+    for row in contact_rows:
+        vendor.contacts.append(models.VendorContact(**row))
     try:
         db.commit()
     except IntegrityError:
@@ -69,6 +128,7 @@ def get_vendors(db, status: str | None = None, category: str | None = None,
         .joinedload(ProjectVendor.project),
         joinedload(models.Vendor.certifications),
         joinedload(models.Vendor.licenses),
+        joinedload(models.Vendor.contacts),
     )
     if status:
         query = query.filter(models.Vendor.status == status)
@@ -96,6 +156,7 @@ def get_vendor_by_id(db, vendor_id):
         .joinedload(ProjectVendor.project),
         joinedload(models.Vendor.certifications),
         joinedload(models.Vendor.licenses),
+        joinedload(models.Vendor.contacts),
     ).filter(models.Vendor.id == vendor_id).first()
 
     if not vendor:
@@ -109,14 +170,16 @@ def get_vendor_by_id(db, vendor_id):
 # ---------------- UPDATE ----------------
 def update_vendor(db: Session, vendor_id: int, data: schemas.VendorUpdate,
                   actor_id: int | None = None):
-    vendor = db.query(models.Vendor).filter(
-        models.Vendor.id == vendor_id
-    ).first()
+    vendor = db.query(models.Vendor).options(
+        joinedload(models.Vendor.contacts)
+    ).filter(models.Vendor.id == vendor_id).first()
 
     if not vendor:
         return None
 
     payload = data.model_dump(exclude_unset=True)
+    contacts_provided = "contacts" in payload
+    contact_rows = _prepare_contacts(payload.pop("contacts", None))
     if "vendor_code" in payload and payload["vendor_code"] != vendor.vendor_code:
         if db.query(models.Vendor).filter(
                 models.Vendor.vendor_code == payload["vendor_code"]).first():
@@ -124,6 +187,36 @@ def update_vendor(db: Session, vendor_id: int, data: schemas.VendorUpdate,
 
     for key, value in payload.items():
         setattr(vendor, key, value)
+
+    if contacts_provided:
+        vendor.contacts.clear()
+        for row in contact_rows:
+            vendor.contacts.append(models.VendorContact(**row))
+        # The submitted primary is authoritative — clear fields it no longer has.
+        if contact_rows:
+            _sync_legacy_contact(vendor, contact_rows, replace=True)
+        else:
+            vendor.contact_person = None
+            vendor.phone = None
+            vendor.email = None
+            vendor.contact_designation = None
+            vendor.alternate_phone = None
+    elif vendor.contacts:
+        # Keep the primary contact row in step with legacy-field edits.
+        primary = next((c for c in vendor.contacts if c.is_primary), None)
+        if primary:
+            if "contact_person" in payload:
+                primary.name = payload["contact_person"] or primary.name
+            if "phone" in payload:
+                primary.phone = payload["phone"] or primary.phone
+            if "email" in payload:
+                primary.email = payload["email"] or primary.email
+            if "contact_designation" in payload:
+                primary.designation = (payload["contact_designation"]
+                                       or primary.designation)
+            if "alternate_phone" in payload:
+                primary.alternate_phone = (payload["alternate_phone"]
+                                           or primary.alternate_phone)
 
     db.commit()
     db.refresh(vendor)

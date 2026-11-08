@@ -4,16 +4,18 @@ import {
   FiClipboard,
   FiCheckCircle,
   FiClock,
+  FiCopy,
   FiEye,
   FiFileText,
   FiSearch,
   FiFilter,
   FiX,
-} from "react-icons/fi";import { useProcurement } from "../../../store/context/ProcurementContext";
+} from "react-icons/fi";
+import { useProcurement } from "../../../store/context/ProcurementContext";
 import Toast from "../../../Components/Toast/Toast";
 import { useToast } from "../../../Components/Toast/useToast";
 import Pagination from "../../../Components/Pagination/Pagination";
-import { endVendorAssignment } from "../../../api/procurement.api";
+import { duplicateWo, endVendorAssignment } from "../../../api/procurement.api";
 import styles from "./Procurement.module.css";
 
 const statusClass = (s) => {
@@ -43,9 +45,12 @@ export default function WorkOrders() {
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [copyingId, setCopyingId] = useState(null);
 
   useEffect(() => {
-    loadWorkOrders().catch(() => {});
+    // Fetch the largest page the API allows so client-side search and the
+    // summary cards cover more than the default first 20 records.
+    loadWorkOrders({ limit: 100 }).catch(() => {});
     loadAssignments().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -57,7 +62,9 @@ export default function WorkOrders() {
     return (
       (!q ||
         w.work_order_number?.toLowerCase().includes(q) ||
-        w.vendor_name?.toLowerCase().includes(q)) &&
+        w.vendor_name?.toLowerCase().includes(q) ||
+        w.project_code?.toLowerCase().includes(q) ||
+        w.project_name?.toLowerCase().includes(q)) &&
       (!status || w.status === status)
     );
   });
@@ -72,6 +79,19 @@ export default function WorkOrders() {
     pending: workOrders.filter((w) => ["ISSUED", "VIEWED"].includes(w.status)).length,
     active: workOrders.filter((w) => ["ACCEPTED", "IN_PROGRESS"].includes(w.status)).length,
     assigned: activeAssign.length,
+  };
+
+  const copyAsDraft = async (w) => {
+    setCopyingId(w.id);
+    try {
+      const res = await duplicateWo(w.id, w.project_id);
+      push(`Draft copy ${res.data.work_order_number} created`, "success");
+      navigate(`/admin/work-orders/create?draft=${res.data.id}`);
+    } catch (e) {
+      push(e?.response?.data?.detail || "Could not copy work order", "error");
+    } finally {
+      setCopyingId(null);
+    }
   };
 
   return (
@@ -105,33 +125,7 @@ export default function WorkOrders() {
         <div className={styles.searchBox}>
           <FiSearch />
           <input
-            placeholder="Search WO number or vendor..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className={styles.filterBox}>
-          <FiFilter />
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">All Statuses</option>
-            {["DRAFT", "IN_REVIEW", "PDF_GENERATED", "SIGNED", "STAMPED", "FINALIZED", "ISSUED", "VIEWED", "ACCEPTED", "REJECTED", "IN_PROGRESS", "COMPLETED", "CLOSED", "CANCELLED"].map((s) => (
-              <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>
-            ))}
-          </select>
-        </div>
-        {(search || status) && (
-          <button className={styles.clearBtn} onClick={() => { setSearch(""); setStatus(""); }}>
-            <FiX />
-            Clear
-          </button>
-        )}
-      </div>
-
-      <div className={styles.toolbar}>
-        <div className={styles.searchBox}>
-          <FiSearch />
-          <input
-            placeholder="Search WO number or vendor..."
+            placeholder="Search WO number, vendor or project..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -164,13 +158,13 @@ export default function WorkOrders() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>WO Number</th>
-                <th>Vendor</th>
-                <th>Project</th>
-                <th>Contract Value</th>
-                <th>Schedule</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th scope="col">WO Number</th>
+                <th scope="col">Vendor</th>
+                <th scope="col">Project</th>
+                <th scope="col" className={styles.colMoney}>Contract Value</th>
+                <th scope="col">Schedule</th>
+                <th scope="col" className={styles.colCenter}>Status</th>
+                <th scope="col" className={`${styles.colActions} ${styles.colActionsWide}`}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -183,16 +177,36 @@ export default function WorkOrders() {
               ) : (
                 paged.map((w) => (
                   <tr key={w.id}>
-                    <td><span className={styles.codeBadge}>{w.work_order_number}</span></td>
-                    <td><strong>{w.vendor_name || `#${w.vendor_id}`}</strong></td>
-                    <td>#{w.project_id}</td>
-                    <td className={styles.money}>{w.contract_value} {w.currency}</td>
-                    <td>{w.start_date || "?"} → {w.end_date || "?"}</td>
-                    <td><span className={`${styles.statusBadge} ${statusClass(w.status)}`}>{(w.status || "-").toLowerCase().replace(/_/g, " ")}</span></td>
                     <td>
-                      <button className={styles.rowBtn} onClick={() => navigate(`/admin/work-orders/${w.id}`)}>
-                        <FiEye /> Open
-                      </button>
+                      <span className={styles.codeBadge}>{w.work_order_number}</span>
+                      <span className={styles.versionTag}>v{w.version || 1}</span>
+                    </td>
+                    <td><strong>{w.vendor_name || `#${w.vendor_id}`}</strong></td>
+                    <td>
+                      <strong>{w.project_code || `#${w.project_id}`}</strong>
+                      {w.project_name && <span className={styles.rowSub}>{w.project_name}</span>}
+                    </td>
+                    <td className={`${styles.money} ${styles.colMoney}`}>
+                      {Number(w.contract_value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {w.currency || ""}
+                    </td>
+                    <td>{w.start_date || "?"} → {w.end_date || "?"}</td>
+                    <td className={styles.colCenter}>
+                      <span className={`${styles.statusBadge} ${statusClass(w.status)}`}>{(w.status || "-").toLowerCase().replace(/_/g, " ")}</span>
+                    </td>
+                    <td className={`${styles.colActions} ${styles.colActionsWide}`}>
+                      <div className={styles.rowActions}>
+                        <button className={styles.rowBtn} onClick={() => navigate(`/admin/work-orders/${w.id}`)}>
+                          <FiEye /> Open
+                        </button>
+                        <button
+                          className={styles.rowBtn}
+                          onClick={() => copyAsDraft(w)}
+                          disabled={copyingId === w.id}
+                          title="Create a new draft copy with a fresh number"
+                        >
+                          <FiCopy /> {copyingId === w.id ? "Copying…" : "Copy draft"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -221,11 +235,11 @@ export default function WorkOrders() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Project</th>
-                <th>Vendor</th>
-                <th>Work Order</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th scope="col">Project</th>
+                <th scope="col">Vendor</th>
+                <th scope="col">Work Order</th>
+                <th scope="col" className={styles.colCenter}>Status</th>
+                <th scope="col" className={styles.colActions}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -234,11 +248,14 @@ export default function WorkOrders() {
               )}
               {assignments.map((a) => (
                 <tr key={a.id}>
-                  <td>#{a.project_id}</td>
+                  <td>
+                    <strong>{a.project_code || `#${a.project_id}`}</strong>
+                    {a.project_name && <span className={styles.rowSub}>{a.project_name}</span>}
+                  </td>
                   <td><strong>{a.vendor_name || `#${a.vendor_id}`}</strong></td>
                   <td>#{a.work_order_id}</td>
-                  <td><span className={`${styles.statusBadge} ${a.status === "ACTIVE" ? styles.stSuccess : styles.stNeutral}`}>{(a.status || "-").toLowerCase()}</span></td>
-                  <td>
+                  <td className={styles.colCenter}><span className={`${styles.statusBadge} ${a.status === "ACTIVE" ? styles.stSuccess : styles.stNeutral}`}>{(a.status || "-").toLowerCase()}</span></td>
+                  <td className={styles.colActions}>
                     {a.status === "ACTIVE" && (
                       <button
                         className={`${styles.rowBtn} ${styles.rowBtnDanger}`}

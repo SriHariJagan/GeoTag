@@ -164,6 +164,7 @@ def test_supervisor_cannot_manage_vendors():
 def test_delete_blocked_with_project_link():
     p = client.post("/projects/", json={
         "project_code": "VDEL-001", "date": "2026-09-21", "name": "Del Proj",
+        "project_pan": "ABCDE1234F",
         "client_name": "C", "engineer_in_charge": "E", "location": "L",
         "vendor_ids": [VID["id"]]}, headers=ADMIN)
     assert p.status_code == 200, p.text

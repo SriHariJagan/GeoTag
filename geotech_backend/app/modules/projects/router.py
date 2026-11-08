@@ -46,7 +46,9 @@ def my_projects(db: Session = Depends(get_db), current_user=Depends(get_current_
         projects = service.get_projects_for_vendor(db, current_user.id)
     else:
         raise HTTPException(403, "Access denied")
-    return [service.transform_project(p) for p in projects]
+    include_budget = service.can_view_project_budget(current_user)
+    return [service.transform_project(p, include_budget=include_budget)
+            for p in projects]
 
 # ---------------- GET PROJECT BY ID ----------------
 @router.get("/{project_id}", response_model=schemas.ProjectResponse)
@@ -61,7 +63,8 @@ def get_project(project_id: int, db: Session = Depends(get_db), current_user=Dep
         raise HTTPException(403, "Access denied")
     if role not in ("SUPERADMIN", "ADMIN", "SUPERVISOR", "VENDOR", "MONITOR"):
         raise HTTPException(403, "Access denied")
-    return service.transform_project(project)
+    return service.transform_project(
+        project, include_budget=service.can_view_project_budget(current_user))
 
 
 
@@ -186,7 +189,7 @@ def project_cost_ledger(project_id: int, db: Session = Depends(get_db),
         raise HTTPException(status_code=403, detail="Access denied")
     if role not in ("SUPERADMIN", "ADMIN", "SUPERVISOR", "MONITOR"):
         raise HTTPException(status_code=403, detail="Access denied")
-    return service.get_cost_ledger(db, project_id)
+    return service.get_cost_ledger(db, project_id, user=current_user)
 
 
 @router.get("/{project_id}/timeline")

@@ -1,6 +1,33 @@
+import re
+
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, List
 from datetime import date
+
+# Indian statutory identifiers: PAN (10 chars) and GSTIN (15 chars).
+PAN_PATTERN = re.compile(r"^[A-Z]{5}[0-9]{4}[A-Z]$")
+GSTIN_PATTERN = re.compile(r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$")
+
+
+def _clean_identifier(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    cleaned = value.strip().upper().replace(" ", "")
+    return cleaned or None
+
+
+def _validate_pan(value: Optional[str]) -> Optional[str]:
+    cleaned = _clean_identifier(value)
+    if cleaned and not PAN_PATTERN.match(cleaned):
+        raise ValueError("project_pan must be a valid 10-character PAN (e.g. ABCDE1234F)")
+    return cleaned
+
+
+def _validate_gstin(value: Optional[str]) -> Optional[str]:
+    cleaned = _clean_identifier(value)
+    if cleaned and not GSTIN_PATTERN.match(cleaned):
+        raise ValueError("project_gst must be a valid 15-character GSTIN")
+    return cleaned
 
 
 # ---------------- Nested ----------------
@@ -54,11 +81,37 @@ class ProjectBase(BaseModel):
     priority: Optional[str] = None
     currency: str = "INR"
 
+    # Statutory identity (PAN is enforced on create; GSTIN remains optional)
+    project_pan: Optional[str] = None
+    project_gst: Optional[str] = None
+
+    # Field operations profile
+    number_of_rigs: int = 0
+    rig_types: Optional[str] = None
+    area_of_working: Optional[str] = None
+
     @field_validator("priority")
     @classmethod
     def priority_known(cls, v):
         if v is not None and v not in {"LOW", "MEDIUM", "HIGH", "CRITICAL"}:
             raise ValueError("priority must be LOW, MEDIUM, HIGH or CRITICAL")
+        return v
+
+    @field_validator("project_pan")
+    @classmethod
+    def pan_known(cls, v):
+        return _validate_pan(v)
+
+    @field_validator("project_gst")
+    @classmethod
+    def gst_known(cls, v):
+        return _validate_gstin(v)
+
+    @field_validator("number_of_rigs")
+    @classmethod
+    def rigs_non_negative(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("number_of_rigs cannot be negative")
         return v
 
     @model_validator(mode="after")
@@ -70,6 +123,8 @@ class ProjectBase(BaseModel):
 
 
 class ProjectCreate(ProjectBase):
+    # Mandatory on creation — the API rejects projects without a valid PAN.
+    project_pan: str = Field(..., min_length=10, max_length=10)
     supervisor_ids: List[int] = Field(default_factory=list)
     machine_ids: List[int] = Field(default_factory=list)
     vendor_ids: List[int] = Field(default_factory=list)
@@ -97,6 +152,11 @@ class ProjectUpdate(BaseModel):
     project_type: Optional[str] = None
     priority: Optional[str] = None
     currency: Optional[str] = None
+    project_pan: Optional[str] = None
+    project_gst: Optional[str] = None
+    number_of_rigs: Optional[int] = None
+    rig_types: Optional[str] = None
+    area_of_working: Optional[str] = None
 
     supervisor_ids: Optional[List[int]] = None
     machine_ids: Optional[List[int]] = None
@@ -109,6 +169,23 @@ class ProjectUpdate(BaseModel):
             raise ValueError("priority must be LOW, MEDIUM, HIGH or CRITICAL")
         return v
 
+    @field_validator("project_pan")
+    @classmethod
+    def pan_known(cls, v):
+        return _validate_pan(v)
+
+    @field_validator("project_gst")
+    @classmethod
+    def gst_known(cls, v):
+        return _validate_gstin(v)
+
+    @field_validator("number_of_rigs")
+    @classmethod
+    def rigs_non_negative(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("number_of_rigs cannot be negative")
+        return v
+
     @model_validator(mode="after")
     def dates_sane(self):
         if (self.planned_start_date and self.planned_end_date
@@ -119,6 +196,8 @@ class ProjectUpdate(BaseModel):
 
 class ProjectResponse(ProjectBase):
     id: int
+    # Budget is role-redacted: supervisors and vendors receive null.
+    project_budget: Optional[float] = None
     supervisors: List[UserResponse] = []
     machinery: List[MachineResponse] = []
     vendors: List[VendorResponse] = []

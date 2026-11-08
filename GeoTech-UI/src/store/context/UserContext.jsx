@@ -16,6 +16,11 @@ import {
   listUserAssignments,
   endAssignment,
 } from "../../api/auth.api";
+import {
+  cached,
+  invalidateQueryCache,
+  queryKey,
+} from "../../utils/queryCache";
 
 const UserContext = createContext(null);
 
@@ -26,14 +31,28 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const loadUsers = useCallback(async (params) => {
+  const loadUsers = useCallback(async (params = {}, { force = false } = {}) => {
     try {
       setLoading(true);
       setError("");
-      const res = await getUsersAdmin(params);
-      setUsers(res.data || []);
-      const t = Number(res.headers?.["x-total-count"]);
-      setTotal(Number.isFinite(t) && t >= 0 ? t : (res.data || []).length);
+      const payload = await cached(
+        queryKey("users:list", params),
+        () =>
+          getUsersAdmin(params).then((res) => {
+            const rows = res.data || [];
+            const headerTotal = Number(res.headers?.["x-total-count"]);
+            return {
+              rows,
+              total: Number.isFinite(headerTotal) && headerTotal >= 0
+                ? headerTotal
+                : rows.length,
+            };
+          }),
+        { force }
+      );
+      setUsers(payload.rows);
+      setTotal(payload.total);
+      return payload.rows;
     } catch (err) {
       // Real API failure surfaces as failure — never dummy data.
       setError(err?.response?.data?.detail || "Failed to load users");
@@ -45,7 +64,8 @@ export const UserProvider = ({ children }) => {
   const addUser = useCallback(
     async (data) => {
       const res = await createUser(data);
-      await loadUsers();
+      invalidateQueryCache("users:");
+      await loadUsers({}, { force: true });
       return res.data;
     },
     [loadUsers]
@@ -54,7 +74,8 @@ export const UserProvider = ({ children }) => {
   const updateExistingUser = useCallback(
     async (id, data) => {
       const res = await updateUser(id, data);
-      await loadUsers();
+      invalidateQueryCache("users:");
+      await loadUsers({}, { force: true });
       return res.data;
     },
     [loadUsers]
@@ -63,7 +84,8 @@ export const UserProvider = ({ children }) => {
   const inviteNewUser = useCallback(
     async (data) => {
       const res = await inviteUser(data);
-      await loadUsers();
+      invalidateQueryCache("users:");
+      await loadUsers({}, { force: true });
       return res.data;
     },
     [loadUsers]
@@ -72,7 +94,8 @@ export const UserProvider = ({ children }) => {
   const inviteExisting = useCallback(
     async (id) => {
       const res = await inviteExistingUser(id);
-      await loadUsers();
+      invalidateQueryCache("users:");
+      await loadUsers({}, { force: true });
       return res.data;
     },
     [loadUsers]
@@ -81,7 +104,8 @@ export const UserProvider = ({ children }) => {
   const resend = useCallback(
     async (id) => {
       const res = await resendInvite(id);
-      await loadUsers();
+      invalidateQueryCache("users:");
+      await loadUsers({}, { force: true });
       return res.data;
     },
     [loadUsers]
@@ -90,7 +114,8 @@ export const UserProvider = ({ children }) => {
   const revoke = useCallback(
     async (id) => {
       const res = await revokeInvite(id);
-      await loadUsers();
+      invalidateQueryCache("users:");
+      await loadUsers({}, { force: true });
       return res.data;
     },
     [loadUsers]
@@ -99,7 +124,8 @@ export const UserProvider = ({ children }) => {
   const setRole = useCallback(
     async (id, role) => {
       const res = await changeRole(id, role);
-      await loadUsers();
+      invalidateQueryCache("users:");
+      await loadUsers({}, { force: true });
       return res.data;
     },
     [loadUsers]
@@ -108,7 +134,8 @@ export const UserProvider = ({ children }) => {
   const setStatus = useCallback(
     async (id, accountStatus, reason) => {
       const res = await changeStatus(id, accountStatus, reason);
-      await loadUsers();
+      invalidateQueryCache("users:");
+      await loadUsers({}, { force: true });
       return res.data;
     },
     [loadUsers]
@@ -117,7 +144,8 @@ export const UserProvider = ({ children }) => {
   const removeUser = useCallback(
     async (id) => {
       const res = await deleteUser(id);
-      await loadUsers();
+      invalidateQueryCache("users:");
+      await loadUsers({}, { force: true });
       return res.data;
     },
     [loadUsers]

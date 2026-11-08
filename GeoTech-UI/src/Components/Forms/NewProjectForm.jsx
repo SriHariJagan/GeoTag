@@ -4,7 +4,7 @@ import { useMachines } from "../../store/context/MachineContext";
 import { useUsers } from "../../store/context/UserContext";
 import { useVendors } from "../../store/context/VendorContext";
 import ProjectAutocomplete from "../WorkOrder/ProjectAutocomplete";
-import { getProjectDetails } from "../../api/projects.api";
+import { getProjectById } from "../../api/projects.api";
 
 const PROJECT_TYPES = ["INVESTIGATION", "DRILLING", "SURVEY", "TESTING", "CIVIL_WORK", "CONSULTANCY", "OTHER"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
@@ -23,6 +23,11 @@ const EMPTY_FORM = {
   priority: "MEDIUM",
   currency: "INR",
   project_budget: "",
+  project_pan: "",
+  project_gst: "",
+  number_of_rigs: "",
+  rig_types: "",
+  area_of_working: "",
   status: "DRAFT",
   totalBH: "",
   completedBH: "",
@@ -45,8 +50,9 @@ export default function NewProjectForm({ initialData, onSubmit }) {
 
   useEffect(() => {
     loadMachines();
-    loadUsers();
-    loadVendors();
+    // Share one cached directory across every project/vendor picker.
+    loadUsers({ limit: 100 });
+    loadVendors({ limit: 200 });
   }, []);
 
   useEffect(() => {
@@ -60,6 +66,11 @@ export default function NewProjectForm({ initialData, onSubmit }) {
         totalBH: initialData.total_boreholes ?? "",
         completedBH: initialData.completed_boreholes ?? "",
         project_budget: initialData.project_budget ?? "",
+        project_pan: initialData.project_pan || "",
+        project_gst: initialData.project_gst || "",
+        number_of_rigs: initialData.number_of_rigs ?? "",
+        rig_types: initialData.rig_types || "",
+        area_of_working: initialData.area_of_working || "",
         priority: initialData.priority || "MEDIUM",
         currency: initialData.currency || "INR",
         project_type: initialData.project_type || "",
@@ -141,15 +152,23 @@ export default function NewProjectForm({ initialData, onSubmit }) {
     if (!p) return;
     setLinkLoading(true);
     try {
-      const full = await getProjectDetails(p.id).then((r) => r.data).catch(() => null);
+      // The search endpoint returns only summary fields; load the full project
+      // so PAN/GST/rig details and the team are copied as well.
+      const full = await getProjectById(p.id).then((r) => r.data).catch(() => null);
+      const source = { ...p, ...(full || {}) };
       setLinkedProject({ ...p, full });
       // Pre-fill from existing project; existing entities become selectable options.
       setFormData((prev) => ({
         ...prev,
-        project_code: p.project_code || prev.project_code,
-        name: p.name || prev.name,
-        client_name: p.client_name || prev.client_name,
-        location: p.location || prev.location,
+        project_code: source.project_code || prev.project_code,
+        name: source.name || prev.name,
+        client_name: source.client_name || prev.client_name,
+        location: source.location || prev.location,
+        project_pan: source.project_pan || prev.project_pan,
+        project_gst: source.project_gst || prev.project_gst,
+        number_of_rigs: source.number_of_rigs ?? prev.number_of_rigs,
+        rig_types: source.rig_types || prev.rig_types,
+        area_of_working: source.area_of_working || prev.area_of_working,
       }));
       if (full) {
         const supIds = (full.supervisors || []).map((s) => s.id).filter(Boolean);
@@ -172,8 +191,20 @@ export default function NewProjectForm({ initialData, onSubmit }) {
 
   const str = (v) => (v ?? "").toString();
 
+  const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+  const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
   const validate = () => {
     const e = {};
+    const pan = str(formData.project_pan).trim().toUpperCase();
+    const gst = str(formData.project_gst).trim().toUpperCase();
+    if (!initialData && !pan) e.project_pan = "PAN is required";
+    else if (pan && !PAN_RE.test(pan))
+      e.project_pan = "Enter a valid PAN, e.g. ABCDE1234F";
+    if (gst && !GSTIN_RE.test(gst))
+      e.project_gst = "Enter a valid 15-character GSTIN";
+    if (formData.number_of_rigs !== "" && Number(formData.number_of_rigs) < 0)
+      e.number_of_rigs = "Cannot be negative";
     if (pendingSupervisors.length > 0)
       e.supervisors = "User has not accepted the invitation and cannot be assigned.";
     if (ineligibleVendors.length > 0)
@@ -215,6 +246,11 @@ export default function NewProjectForm({ initialData, onSubmit }) {
         priority: formData.priority || undefined,
         currency: formData.currency || "INR",
         project_budget: formData.project_budget === "" ? 0 : Number(formData.project_budget),
+        project_pan: str(formData.project_pan).trim().toUpperCase() || undefined,
+        project_gst: str(formData.project_gst).trim().toUpperCase() || undefined,
+        number_of_rigs: formData.number_of_rigs === "" ? 0 : Number(formData.number_of_rigs),
+        rig_types: str(formData.rig_types).trim() || undefined,
+        area_of_working: str(formData.area_of_working).trim() || undefined,
         status: formData.status,
         total_boreholes: totalBH,
         completed_boreholes: completedBH,
@@ -276,6 +312,27 @@ export default function NewProjectForm({ initialData, onSubmit }) {
           {field("Project Code", "project_code", { placeholder: "e.g. HYD-001", required: true }, "Unique. Used in RFQs, work orders and reports.")}
           {field("Project Name", "name", { placeholder: "e.g. Hyderabad Geotechnical Investigation", required: true })}
           {field("Date", "date", { type: "date", required: true })}
+          {field(
+            "Project PAN",
+            "project_pan",
+            {
+              placeholder: "ABCDE1234F",
+              required: !initialData,
+              maxLength: 10,
+              style: { textTransform: "uppercase" },
+            },
+            "Permanent Account Number of the project/client entity. Required."
+          )}
+          {field(
+            "Project GSTIN",
+            "project_gst",
+            {
+              placeholder: "22ABCDE1234F1Z5",
+              maxLength: 15,
+              style: { textTransform: "uppercase" },
+            },
+            "Optional. 15-character GST identification number."
+          )}
           <div className={`${styles.field} ${styles.fullWidth}`}>
             <label htmlFor="np-description">Description</label>
             <textarea
@@ -339,6 +396,9 @@ export default function NewProjectForm({ initialData, onSubmit }) {
               {CURRENCIES.map((t) => (<option key={t} value={t}>{t}</option>))}
             </select>
           </div>
+          {field("Number of Rigs", "number_of_rigs", { type: "number", min: 0, step: 1, placeholder: "e.g. 3" })}
+          {field("Rig Types", "rig_types", { placeholder: "e.g. Rotary, DTH, Auger" }, "Comma-separated list of rig types deployed.")}
+          {field("Area of Working", "area_of_working", { placeholder: "e.g. Open ground, hilly terrain, riverbed" })}
           {field("Total Boreholes", "totalBH", { type: "number", min: 0 })}
           {field("Completed Boreholes", "completedBH", { type: "number", min: 0 })}
           <div className={styles.field}>
@@ -388,7 +448,7 @@ export default function NewProjectForm({ initialData, onSubmit }) {
             onToggle={(id) => toggleId("supervisor_ids", id)}
             onSet={(ids) => setIds("supervisor_ids", ids)}
             getKey={(u) => u.full_name || u.email}
-            getSub={(u) => u.email}
+            getSub={(u) => [u.employee_id, u.email].filter(Boolean).join(" · ")}
             getBadge={(u) => (u.account_status === "ACTIVE" ? null : u.account_status || "UNKNOWN")}
           />
           <MultiSelect

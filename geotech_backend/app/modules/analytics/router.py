@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.modules.analytics import schemas, service
-from app.modules.projects.service import is_supervisor_assigned
+from app.modules.projects.service import (
+    can_view_project_budget, is_supervisor_assigned,
+)
 from app.utils.dependencies import get_current_user, normalize_role, require_roles
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
@@ -48,7 +50,8 @@ def get_project_cost_risk(
     if not _can_access_project(db, project_id, current_user):
         raise HTTPException(status_code=403, detail="Access denied")
 
-    result = service.get_cost_risk(db, project_id)
+    result = service.get_cost_risk(
+        db, project_id, include_budget=can_view_project_budget(current_user))
     if not result:
         raise HTTPException(status_code=404, detail="Project not found")
     return result

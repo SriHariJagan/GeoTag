@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FiCheckCircle, FiChevronDown, FiX } from "react-icons/fi";
 import ProjectAutocomplete from "./ProjectAutocomplete";
 import { Popover, PopList, PopRow } from "./Picker";
 import { eligibleVendors } from "../../api/procurement.api";
-import { getSupervisors } from "../../api/supervisors.api";
-import { getMachines } from "../../api/machines.api";
+import { cached, queryKey } from "../../utils/queryCache";
 import { totalsOf } from "./docEngine";
 import styles from "./Studio.module.css";
 
@@ -13,11 +11,11 @@ import styles from "./Studio.module.css";
  * Left-side corporate document editor. All changes flow up via onChange;
  * the A4 preview updates immediately (no save required to preview).
  */
-export default function WoEditor({ doc, company, stdTerms, onChange, onRegenNumber, errors = {}, onSectionFocus, activeSection }) {
+export default function WoEditor({ doc, stdTerms, onChange, onRegenNumber, errors = {}, onSectionFocus, activeSection }) {
   const set = (patch) => onChange({ ...doc, ...patch });
   const totals = totalsOf(doc.items, doc.discount, doc.tax_amount, doc.other_charges);
   /* tab selection drives the preview highlight, so it flows through onSectionFocus */
-  const shown = SECTIONS.some((s) => s.sec === activeSection) ? activeSection : "info";
+  const shown = SECTIONS.some((s) => s.sec === activeSection) ? activeSection : SECTIONS[0].sec;
 
   const go = (sec) => onSectionFocus && onSectionFocus(sec);
 
@@ -29,7 +27,7 @@ export default function WoEditor({ doc, company, stdTerms, onChange, onRegenNumb
 
   const errSections = new Set(
     Object.entries(errors)
-      .map(([k]) => ({ _info: "info", _vendor: "vendor", _project: "project", _subject: "subject", _scope: "scope", _boq: "boq", _pay: "pay", _gen: "terms", _sig: "sig" }[k]))
+      .map(([k]) => ({ _info: "info", _vendor: "vendor", _project: "project", _subject: "subject", _scope: "scope", _boq: "boq", _pay: "pay", _gen: "terms", _sig: "signoff" }[k]))
       .filter(Boolean)
   );
 
@@ -56,50 +54,7 @@ export default function WoEditor({ doc, company, stdTerms, onChange, onRegenNumb
           <b>{doneCount}</b>/{SECTIONS.length} ready
         </span>
       </div>
-      <EdSection sec="company" active={shown === "company"} title="Company Letterhead" hint="Printed at the top of every page">
-        <div className={styles.companyCard}>
-          {company.logo_url ? (
-            <img src={`${import.meta.env.VITE_API_URL}/company-settings/logo`} alt="Company logo" />
-          ) : (
-            <span className={styles.companyMonogram}>{(company.company_name || "C").charAt(0)}</span>
-          )}
-          <div className={styles.companyCardMain}>
-            <strong>{company.company_name || "Company not configured"}</strong>
-            {company.tagline && <em>{company.tagline}</em>}
-            <span>{[company.address_line1, company.address_line2].filter(Boolean).join(", ")}</span>
-            <span>{[company.city, company.state, company.pin].filter(Boolean).join(", ")}</span>
-            <span>{[company.phone, company.email, company.website].filter(Boolean).join("  |  ")}</span>
-            {(company.gstin || company.pan) && (
-              <span className={styles.companyTax}>{[company.gstin && `GSTIN ${company.gstin}`, company.pan && `PAN ${company.pan}`].filter(Boolean).join("  ·  ")}</span>
-            )}
-          </div>
-          <Link className={styles.companyEdit} to="/admin/settings/company">Edit settings →</Link>
-        </div>
-      </EdSection>
-
-      <EdSection sec="info" active={shown === "info"} title="Work Order Number & Date" hint="Appears under the title on page 1" error={errors._info}>
-        <div className={styles.fGrid}>
-          <label className={styles.fld}>Work Order Number *
-            <div className={styles.fRow}>
-              <input value={doc.work_order_number || ""} onChange={(e) => set({ work_order_number: e.target.value })} placeholder="Generated on project select" />
-              <button type="button" className={styles.miniBtn} onClick={onRegenNumber} title="Regenerate from numbering settings">↻</button>
-            </div>
-          </label>
-          <label className={styles.fld}>Work Order Date *
-            <input type="date" value={doc.work_order_date || ""} onChange={(e) => set({ work_order_date: e.target.value })} />
-          </label>
-          <label className={styles.fld}>Work Type
-            <input value={doc.work_type || ""} onChange={(e) => set({ work_type: e.target.value })} placeholder="e.g. Geotechnical Investigation" />
-          </label>
-          <label className={styles.fld}>Currency
-            <select value={doc.currency || "INR"} onChange={(e) => set({ currency: e.target.value })}>
-              {["INR", "USD", "EUR", "AED", "SAR"].map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </label>
-        </div>
-      </EdSection>
-
-      <EdSection sec="project" active={shown === "project"} title="Project Particulars" hint="Printed as the project / client block" error={errors._project}>
+      <EdSection sec="project" active={shown === "project"} title="Project Particulars" hint="Pick the project first — its details fill the document" error={errors._project}>
         <ProjectAutocomplete
           value={doc._projectCode || ""}
           onSelect={(p) => onChange({ ...doc, project_id: p ? p.id : null, _projectCode: p ? p.project_code : "", _projectRow: p || null })}
@@ -121,6 +76,28 @@ export default function WoEditor({ doc, company, stdTerms, onChange, onRegenNumb
           </label>
         </div>
         <p className={styles.fieldNote}>These values are snapshotted on the document — later edits to the project will not change this work order.</p>
+      </EdSection>
+
+      <EdSection sec="info" active={shown === "info"} title="Work Order Number & Date" hint="Generated automatically from the selected project" error={errors._info}>
+        <div className={styles.fGrid}>
+          <label className={styles.fld}>Work Order Number *
+            <div className={styles.fRow}>
+              <input value={doc.work_order_number || ""} onChange={(e) => set({ work_order_number: e.target.value })} placeholder="Generated on project select" />
+              <button type="button" className={styles.miniBtn} onClick={onRegenNumber} title="Regenerate from numbering settings">↻</button>
+            </div>
+          </label>
+          <label className={styles.fld}>Work Order Date *
+            <input type="date" value={doc.work_order_date || ""} onChange={(e) => set({ work_order_date: e.target.value })} />
+          </label>
+          <label className={styles.fld}>Work Type
+            <input value={doc.work_type || ""} onChange={(e) => set({ work_type: e.target.value })} placeholder="e.g. Geotechnical Investigation" />
+          </label>
+          <label className={styles.fld}>Currency
+            <select value={doc.currency || "INR"} onChange={(e) => set({ currency: e.target.value })}>
+              {["INR", "USD", "EUR", "AED", "SAR"].map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </label>
+        </div>
       </EdSection>
 
       <EdSection sec="vendor" active={shown === "vendor"} title="Vendor / Contractor" hint="Printed as the addressee block" error={errors._vendor}>
@@ -173,16 +150,6 @@ export default function WoEditor({ doc, company, stdTerms, onChange, onRegenNumb
             }}
           />
         </FieldGroup>
-      </EdSection>
-
-      <EdSection sec="team" active={shown === "team"} title="Project Team" hint="Assigned automatically when the vendor accepts">
-        <p className={styles.teamHint}>
-          Project may stay empty — supervisors and machinery chosen here are assigned to the
-          project automatically when the vendor accepts. Only ACTIVE supervisors and
-          available machines are accepted (backend enforced).
-        </p>
-        <TeamSupervisors value={doc.team_supervisors || []} onChange={(team_supervisors) => set({ team_supervisors })} />
-        <TeamMachines value={doc.team_machines || []} onChange={(team_machines) => set({ team_machines })} />
       </EdSection>
 
       <EdSection sec="subject" active={shown === "subject"} title="Subject & Reference" hint="What this order covers" error={errors._subject}>
@@ -308,14 +275,11 @@ export default function WoEditor({ doc, company, stdTerms, onChange, onRegenNumb
         </label>
       </EdSection>
 
-      <EdSection sec="accept" active={shown === "accept"} title="Acceptance Statement" hint="Vendor sign-off wording">
+      <EdSection sec="signoff" active={shown === "signoff"} title="Acceptance & Sign-off" hint="Acceptance wording and the printed signatories" error={errors._sig}>
         <label className={styles.fld}>Acceptance text
           <textarea rows={3} value={doc.acceptance_text || ""} onChange={(e) => set({ acceptance_text: e.target.value })} />
         </label>
-      </EdSection>
-
-      <EdSection sec="sig" active={shown === "sig"} title="Signatories" hint="Printed on the document" error={errors._sig}>
-        <div className={styles.fGrid}>
+        <div className={styles.fGrid} style={{ marginTop: 8 }}>
           <label className={styles.fld}>Company signatory name *
             <input value={doc.signer_name || ""} onChange={(e) => set({ signer_name: e.target.value })} />
           </label>
@@ -341,21 +305,20 @@ const alias = (k) => ({
   contact_person: "contact_person", mobile: "phone", email: "email", gstin: "gstin", pan: "pan",
 }[k] || k);
 
-/* Order mirrors docEngine.buildBlocks exactly, so tab N edits the same
-   block that appears Nth on the printed A4 page. */
+/* Authoring flow, not page order: the project is picked first because the
+   work-order number is generated from it. Letterhead is printed from company
+   settings and the project team is assigned automatically, so neither needs
+   an editor step. Acceptance + signatures share the final sign-off step. */
 const SECTIONS = [
-  { sec: "company", n: 1, label: "Company Letterhead", short: "Letterhead" },
+  { sec: "project", n: 1, label: "Project Particulars", short: "Project" },
   { sec: "info", n: 2, label: "Work Order Number & Date", short: "Number" },
-  { sec: "project", n: 3, label: "Project Particulars", short: "Project" },
-  { sec: "vendor", n: 4, label: "Vendor / Contractor", short: "Vendor" },
-  { sec: "team", n: 5, label: "Project Team", short: "Team" },
-  { sec: "subject", n: 6, label: "Subject & Reference", short: "Subject" },
-  { sec: "scope", n: 7, label: "Scope of Work", short: "Scope" },
-  { sec: "boq", n: 8, label: "Work Items & Pricing", short: "Items" },
-  { sec: "pay", n: 9, label: "Payment Terms", short: "Payment" },
-  { sec: "terms", n: 10, label: "Terms & Conditions", short: "Terms" },
-  { sec: "accept", n: 11, label: "Acceptance Statement", short: "Accept" },
-  { sec: "sig", n: 12, label: "Authorised Signatories", short: "Sign" },
+  { sec: "vendor", n: 3, label: "Vendor / Contractor", short: "Vendor" },
+  { sec: "subject", n: 4, label: "Subject & Reference", short: "Subject" },
+  { sec: "scope", n: 5, label: "Scope of Work", short: "Scope" },
+  { sec: "boq", n: 6, label: "Work Items & Pricing", short: "Items" },
+  { sec: "pay", n: 7, label: "Payment Terms", short: "Payment" },
+  { sec: "terms", n: 8, label: "Terms & Conditions", short: "Terms" },
+  { sec: "signoff", n: 9, label: "Acceptance & Sign-off", short: "Sign-off" },
 ];
 
 /** Titled group box inside a section, so related fields read as one block. */
@@ -415,9 +378,14 @@ function VendorPicker({ vendorId, onPick }) {
 
   const load = useCallback(async (term) => {
     setLoading(true);
+    const params = { search: term || undefined, limit: 50 };
     try {
-      const r = await eligibleVendors({ search: term || undefined, limit: 50 });
-      setRows(r.data || []);
+      const vendors = await cached(
+        queryKey("vendors:eligible", params),
+        () => eligibleVendors(params).then((r) => r.data || []),
+        { ttl: 30_000 }
+      );
+      setRows(vendors);
     } catch {
       setRows([]);
     } finally {
@@ -597,207 +565,6 @@ function BoqEditor({ items, onChange, currency = "INR" }) {
           + Add another work item
         </button>
       )}
-    </div>
-  );
-}
-
-function TeamSupervisors({ value, onChange }) {
-  const [rows, setRows] = useState([]);
-  const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const anchorRef = useRef(null);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    getSupervisors()
-      .then((r) => setRows(r.data || []))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const ql = q.trim().toLowerCase();
-  const filtered = (rows || []).filter(
-    (u) =>
-      !value.includes(u.id) &&
-      (!ql ||
-        (u.name || "").toLowerCase().includes(ql) ||
-        (u.email || "").toLowerCase().includes(ql) ||
-        String(u.id) === ql)
-  );
-  const byId = (id) => (rows || []).find((u) => u.id === id);
-  const show = () => { setOpen(true); if (!rows.length) load(); };
-
-  return (
-    <div className={styles.teamBox}>
-      <span className={styles.teamHint}>Supervisors — only ACTIVE accounts can be assigned</span>
-      {(value || []).map((id) => {
-        const u = byId(id);
-        const inactive = u && u.account_status && u.account_status !== "ACTIVE";
-        return (
-          <div key={id} className={`${styles.teamRow} ${inactive ? styles.teamRowWarn : ""}`}>
-            <span className={styles.teamAvatar}>{(u?.name || "?").charAt(0).toUpperCase()}</span>
-            <span className={styles.teamRowMain}>
-              <strong>{u ? u.name : `User #${id}`}</strong>
-              <em>{u?.email || "email unavailable"}</em>
-            </span>
-            {inactive && <span className={styles.teamWarnTag}>{u.account_status}</span>}
-            <button type="button" className={styles.teamRemove} onClick={() => onChange(value.filter((x) => x !== id))} title="Remove" aria-label="Remove supervisor">
-              <FiX />
-            </button>
-          </div>
-        );
-      })}
-
-      <div className={styles.vPicker}>
-        <input
-          ref={anchorRef}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onFocus={show}
-          placeholder="Add supervisor — name or email"
-          aria-label="Add supervisor"
-        />
-        <button type="button" className={styles.vToggle} onClick={() => (open ? setOpen(false) : show())} aria-label="Show supervisors" tabIndex={-1}>
-          <FiChevronDown />
-        </button>
-      </div>
-
-      <Popover anchorRef={anchorRef} open={open} onClose={() => setOpen(false)} maxHeight={330}>
-        <PopList
-          query={q}
-          onQuery={setQ}
-          placeholder="Search supervisors by name or email…"
-          loading={loading}
-          empty={filtered.length === 0 ? "No matching supervisor." : ""}
-          footer={
-            <span className={styles.popHint}>
-              {filtered.length} available · Esc to close
-            </span>
-          }
-        >
-          {filtered.map((u) => (
-            <PopRow
-              key={u.id}
-              onClick={() => { onChange([...value, u.id]); setQ(""); }}
-              title={u.name}
-              meta={`${u.email || "no email"} · user #${u.id}`}
-              right={
-                u.account_status && u.account_status !== "ACTIVE"
-                  ? <span className={styles.popTagWarn}>{u.account_status}</span>
-                  : <span className={styles.popTagOk}>ACTIVE</span>
-              }
-            />
-          ))}
-        </PopList>
-      </Popover>
-    </div>
-  );
-}
-
-function TeamMachines({ value, onChange }) {
-  const [rows, setRows] = useState([]);
-  const [q, setQ] = useState("");
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const anchorRef = useRef(null);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    getMachines()
-      .then((r) => setRows(r.data || []))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const picked = new Set((value || []).map((e) => e.machine_id));
-  const ql = q.trim().toLowerCase();
-  const filtered = (rows || []).filter(
-    (m) =>
-      !picked.has(m.id) &&
-      (!ql || (m.machine_name || "").toLowerCase().includes(ql) || (m.machine_type || "").toLowerCase().includes(ql))
-  );
-
-  const setRate = (mid, rate) =>
-    onChange((value || []).map((e) => (e.machine_id === mid ? { ...e, rate_per_day: rate } : e)));
-  const show = () => { setOpen(true); if (!rows.length) load(); };
-
-  return (
-    <div className={styles.teamBox} style={{ marginTop: 8 }}>
-      <span className={styles.teamHint}>Machinery with per-day price (defaults to machine master rate)</span>
-      {(value || []).map((e) => {
-        const m = (rows || []).find((x) => x.id === e.machine_id);
-        const hasRate = e.rate_per_day !== "" && e.rate_per_day != null;
-        return (
-          <div key={e.machine_id} className={styles.teamRow}>
-            <span className={styles.teamAvatar}>{(e.machine_name || m?.machine_name || "M").charAt(0).toUpperCase()}</span>
-            <span className={styles.teamRowMain}>
-              <strong>{e.machine_name || m?.machine_name || `Machine #${e.machine_id}`}</strong>
-              <em>{m?.machine_type || "machinery"}</em>
-            </span>
-            <label className={styles.teamRate}>
-              <input
-                type="number" min="0" step="0.01" placeholder="0"
-                value={e.rate_per_day ?? ""}
-                onChange={(ev) => setRate(e.machine_id, ev.target.value)}
-                title="Rate per day for this work order"
-              />
-              <i>/day</i>
-            </label>
-            {!hasRate && <span className={styles.teamWarnTag}>NO RATE</span>}
-            <button type="button" className={styles.teamRemove} onClick={() => onChange((value || []).filter((x) => x.machine_id !== e.machine_id))} title="Remove" aria-label="Remove machine">
-              <FiX />
-            </button>
-          </div>
-        );
-      })}
-
-      <div className={styles.vPicker}>
-        <input
-          ref={anchorRef}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onFocus={show}
-          placeholder="Add machinery — name or type"
-          aria-label="Add machinery"
-        />
-        <button type="button" className={styles.vToggle} onClick={() => (open ? setOpen(false) : show())} aria-label="Show machinery" tabIndex={-1}>
-          <FiChevronDown />
-        </button>
-      </div>
-
-      <Popover anchorRef={anchorRef} open={open} onClose={() => setOpen(false)} maxHeight={330}>
-        <PopList
-          query={q}
-          onQuery={setQ}
-          placeholder="Search machinery by name or type…"
-          loading={loading}
-          empty={filtered.length === 0 ? "No matching machine." : ""}
-          footer={
-            <span className={styles.popHint}>
-              {filtered.length} available · Esc to close
-            </span>
-          }
-        >
-          {filtered.map((m) => (
-            <PopRow
-              key={m.id}
-              onClick={() => { onChange([...(value || []), { machine_id: m.id, machine_name: m.machine_name, rate_per_day: m.rate_per_day ?? "" }]); setQ(""); }}
-              title={m.machine_name}
-              meta={`${m.machine_type || "machinery"}${m.rate_per_day != null ? ` · master rate ${Number(m.rate_per_day).toLocaleString()}/day` : " · no master rate"}`}
-              right={
-                m.status && m.status !== "AVAILABLE"
-                  ? <span className={styles.popTagWarn}>{m.status}</span>
-                  : <span className={styles.popTagOk}>{m.rate_per_day != null ? `${Number(m.rate_per_day).toLocaleString()}/day` : "AVAILABLE"}</span>
-              }
-            />
-          ))}
-        </PopList>
-      </Popover>
     </div>
   );
 }

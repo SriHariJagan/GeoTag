@@ -7,6 +7,11 @@ import {
   deleteVendor,
   changeVendorStatus,
 } from "../../api/vendors.api";
+import {
+  cached,
+  invalidateQueryCache,
+  queryKey,
+} from "../../utils/queryCache";
 
 const VendorContext = createContext();
 
@@ -16,15 +21,28 @@ export const VendorProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const loadVendors = useCallback(async (params) => {
+  const loadVendors = useCallback(async (params = {}, { force = false } = {}) => {
     try {
       setLoading(true);
       setError(null);
-      const res = await getVendors(params);
-      setVendors(res.data || []);
-      const t = Number(res.headers?.["x-total-count"]);
-      setTotal(Number.isFinite(t) && t >= 0 ? t : (res.data || []).length);
-      return res.data || [];
+      const payload = await cached(
+        queryKey("vendors:list", params),
+        () =>
+          getVendors(params).then((res) => {
+            const rows = res.data || [];
+            const headerTotal = Number(res.headers?.["x-total-count"]);
+            return {
+              rows,
+              total: Number.isFinite(headerTotal) && headerTotal >= 0
+                ? headerTotal
+                : rows.length,
+            };
+          }),
+        { force }
+      );
+      setVendors(payload.rows);
+      setTotal(payload.total);
+      return payload.rows;
     } catch (err) {
       setError(err);
       throw err;
@@ -33,31 +51,37 @@ export const VendorProvider = ({ children }) => {
     }
   }, []);
 
-  const fetchVendor = useCallback(async (id) => {
-    const res = await getVendorById(id);
-    return res.data;
+  const fetchVendor = useCallback(async (id, { force = false } = {}) => {
+    const vendor = await cached(
+      queryKey("vendors:detail", { id }),
+      () => getVendorById(id).then((res) => res.data),
+      { force }
+    );
+    return vendor;
   }, []);
 
+  // Mutations invalidate cached reads; each page refetches with its own
+  // filters/page so a mutation never replaces a filtered list with every vendor.
   const addVendor = async (data) => {
     const res = await createVendor(data);
-    await loadVendors();
+    invalidateQueryCache("vendors:");
     return res.data;
   };
 
   const editVendor = async (id, data) => {
     const res = await updateVendor(id, data);
-    await loadVendors();
+    invalidateQueryCache("vendors:");
     return res.data;
   };
 
   const removeVendor = async (id) => {
     await deleteVendor(id);
-    await loadVendors();
+    invalidateQueryCache("vendors:");
   };
 
   const setVendorStatus = async (id, status, reason) => {
     const res = await changeVendorStatus(id, status, reason);
-    await loadVendors();
+    invalidateQueryCache("vendors:");
     return res.data;
   };
 

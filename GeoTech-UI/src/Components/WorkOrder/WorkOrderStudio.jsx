@@ -229,28 +229,28 @@ export default function WorkOrderStudio() {
     } catch (e) { fail(e, "Numbering failed"); }
   };
 
-  // prefill number on project pick (only when untouched)
+  // The project drives both the document number and its printed snapshot, so
+  // a project change refreshes them before the draft has an identity of its own.
   const onDocChange = async (next) => {
-    const picked = !doc.project_id && next.project_id;
+    const projectChanged = !!next.project_id && next.project_id !== doc.project_id;
     onChange(next);
-    if (picked && !next.work_order_number) {
+    if (!projectChanged) return;
+
+    if (!doc.id) {
       try {
         const r = await woApi.nextWoNumber(next.project_id);
-        setDoc((d) => (d.work_order_number ? d : { ...d, work_order_number: r.data.work_order_number }));
+        setDoc((d) => ({ ...d, work_order_number: r.data.work_order_number }));
       } catch { /* numbering optional until save */ }
     }
-    if (picked) {
-      try {
-        const full = await getProjectDetails(next.project_id).then((x) => x.data).catch(() => null);
-        if (full) {
-          setDoc((d) => ({
-            ...d,
-            project_name: d.project_name || full.name || "",
-            client_name: d.client_name || full.client_name || "",
-            location: d.location || full.location || "",
-          }));
-        }
-      } catch { /* snapshot optional */ }
+
+    const full = await getProjectDetails(next.project_id).then((x) => x.data).catch(() => null);
+    if (full) {
+      setDoc((d) => ({
+        ...d,
+        project_name: full.name || "",
+        client_name: full.client_name || "",
+        location: full.location || "",
+      }));
     }
   };
 
@@ -354,6 +354,28 @@ export default function WorkOrderStudio() {
 
   const doNewVersion = () => act((s) => woApi.cloneWoVersion(s.id), "Version created — v1 untouched");
 
+  // Save the current document (including unsaved edits) as an independent
+  // draft with a fresh number — the original stays untouched.
+  const doSaveCopy = async () => {
+    setMoreOpen(false);
+    if (!doc.project_id) {
+      push("Select a project first", "error");
+      return;
+    }
+    setBusy(true);
+    try {
+      const saved = dirty || !doc.id ? await persist(doc, { silent: true }) : doc;
+      if (!saved) return;
+      const res = await woApi.duplicateWo(saved.id, saved.project_id);
+      push(`Draft copy ${res.data.work_order_number} created`, "success");
+      navigate(`/admin/work-orders/create?draft=${res.data.id}`);
+    } catch (e) {
+      fail(e, "Could not save a copy");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const locked = doc.id && (doc.is_locked === 1 || ["SIGNED", "STAMPED", "FINALIZED"].includes(doc.status));
 
   const doFit = () => {
@@ -391,8 +413,13 @@ export default function WorkOrderStudio() {
         </div>
 
         <div className={styles.barActions}>
-          <button className={styles.btnAccent} disabled={busy || saving || locked} onClick={() => persist(doc, { silent: false })}>
-            Save
+          <button
+            className={styles.btnAccent}
+            disabled={busy || saving || locked}
+            onClick={() => persist(doc, { silent: false })}
+            title="Create or update this work-order draft"
+          >
+            {!doc.id || doc.status === "DRAFT" ? "Save draft" : "Save"}
           </button>
 
           <div className={styles.menuWrap} ref={pdfRef}>
@@ -425,6 +452,14 @@ export default function WorkOrderStudio() {
               <div className={`${styles.menu} ${styles.menuRight}`}>
                 <button type="button" onClick={() => { setMoreOpen(false); setDupOpen(true); }} disabled={busy}>
                   <FiCopy /> Duplicate from previous
+                </button>
+                <button
+                  type="button"
+                  onClick={doSaveCopy}
+                  disabled={busy || !doc.id}
+                  title={doc.id ? "Create a new draft copy with a fresh number" : "Save this draft first"}
+                >
+                  <FiCopy /> Save a copy as draft
                 </button>
                 <button type="button" onClick={() => { setMoreOpen(false); doSign(); }} disabled={busy || !doc.id || locked}>
                   <FiEdit2 /> Admin sign
@@ -461,10 +496,9 @@ export default function WorkOrderStudio() {
 
       <div className={styles.split}>
         {/* ---------------- LEFT: editor ---------------- */}
-        <div className={`${styles.pane} ${styles.editPane} ${mobileTab === "edit" ? styles.mShow : ""}`}>
+        <div className={`${styles.pane} ${styles.mPane} ${styles.editPane} ${mobileTab === "edit" ? styles.mShow : ""}`}>
           <WoEditor
             doc={doc}
-            company={company}
             stdTerms={stdTerms}
             onChange={onDocChange}
             onRegenNumber={onRegenNumber}
@@ -490,7 +524,7 @@ export default function WorkOrderStudio() {
         </div>
 
         {/* ---------------- RIGHT: live A4 ---------------- */}
-        <div ref={prevPaneRef} className={`${styles.pane} ${styles.prevPane} ${mobileTab === "preview" ? styles.mShow : ""}`}>
+        <div ref={prevPaneRef} className={`${styles.pane} ${styles.mPane} ${styles.prevPane} ${mobileTab === "preview" ? styles.mShow : ""}`}>
           <WoPreview view={view} zoom={zoom} onZoom={(z) => (z === "fit" ? doFit() : setZoom(z))} activeSection={activeSection} />
         </div>
       </div>

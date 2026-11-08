@@ -155,13 +155,36 @@ def _child_router(model, create_schema, response_schema, prefix: str, field: str
     def _create(vendor_id: int, data: create_schema, db: Session = Depends(get_db),
                 current_user=Depends(get_current_user)):
         from app.modules.users.audit import log_action
-        if not db.query(vendor_models.Vendor).filter(
-                vendor_models.Vendor.id == vendor_id).first():
+        vendor = db.query(vendor_models.Vendor).filter(
+            vendor_models.Vendor.id == vendor_id).first()
+        if not vendor:
             raise HTTPException(status_code=404, detail="Vendor not found")
-        rec = model(vendor_id=vendor_id, **data.model_dump())
+        payload = data.model_dump()
+        is_contact = model is vendor_models.VendorContact
+        if is_contact:
+            # Keep the one-primary invariant when a contact is added from the
+            # profile tab (not just the full vendor form). The first contact
+            # becomes primary automatically.
+            existing = db.query(model).filter(model.vendor_id == vendor_id).all()
+            make_primary = bool(payload.get("is_primary")) or not any(
+                c.is_primary for c in existing)
+            if make_primary:
+                db.query(model).filter(model.vendor_id == vendor_id).update(
+                    {model.is_primary: False}, synchronize_session=False)
+            payload["is_primary"] = make_primary
+        rec = model(vendor_id=vendor_id, **payload)
         db.add(rec)
         db.commit()
         db.refresh(rec)
+        if is_contact:
+            rows = db.query(model).filter(model.vendor_id == vendor_id).all()
+            service._sync_legacy_contact(vendor, [
+                {"name": c.name, "phone": c.phone, "email": c.email,
+                 "designation": c.designation,
+                 "alternate_phone": c.alternate_phone,
+                 "is_primary": bool(c.is_primary)}
+                for c in rows
+            ])
         log_action(db, action="VENDOR_UPDATED", actor_id=current_user.id,
                    target_type="vendor", target_id=vendor_id,
                    metadata={"section": field, "op": "create"})
@@ -175,7 +198,34 @@ def _child_router(model, create_schema, response_schema, prefix: str, field: str
                                      model.vendor_id == vendor_id).first()
         if not rec:
             raise HTTPException(status_code=404, detail="Record not found")
+        was_primary = model is vendor_models.VendorContact and bool(rec.is_primary)
+        vendor = (db.query(vendor_models.Vendor)
+                  .filter(vendor_models.Vendor.id == vendor_id).first()
+                  if model is vendor_models.VendorContact else None)
         db.delete(rec)
+        db.flush()
+        if model is vendor_models.VendorContact:
+            # Promote the oldest remaining contact so a vendor with contacts
+            # always has exactly one primary.
+            remaining = (db.query(model)
+                         .filter(model.vendor_id == vendor_id)
+                         .order_by(model.id).all())
+            if remaining:
+                if was_primary:
+                    remaining[0].is_primary = True
+                service._sync_legacy_contact(vendor, [
+                    {"name": c.name, "phone": c.phone, "email": c.email,
+                     "designation": c.designation,
+                     "alternate_phone": c.alternate_phone,
+                     "is_primary": bool(c.is_primary)}
+                    for c in remaining
+                ], replace=was_primary)
+            elif was_primary:
+                vendor.contact_person = None
+                vendor.phone = None
+                vendor.email = None
+                vendor.contact_designation = None
+                vendor.alternate_phone = None
         db.commit()
         return {"message": "Deleted"}
     return sub

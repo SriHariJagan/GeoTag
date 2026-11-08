@@ -83,14 +83,17 @@ export default function Vendors() {
   const canWrite = can(user, PERMISSIONS.VENDOR_CREATE);
   const canDelete = can(user, PERMISSIONS.VENDOR_DELETE);
 
-  const fetchPage = useCallback(() => {
-    return loadVendors({
-      search: search || undefined,
-      status: status || undefined,
-      category: category || undefined,
-      limit: PAGE_SIZE,
-      offset,
-    }).catch(() => {});
+  const fetchPage = useCallback(({ force = false } = {}) => {
+    return loadVendors(
+      {
+        search: search || undefined,
+        status: status || undefined,
+        category: category || undefined,
+        limit: PAGE_SIZE,
+        offset,
+      },
+      { force }
+    ).catch(() => {});
   }, [loadVendors, search, status, category, offset]);
 
   useEffect(() => {
@@ -108,7 +111,7 @@ export default function Vendors() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await fetchPage();
+      await fetchPage({ force: true });
     } finally {
       setRefreshing(false);
     }
@@ -120,6 +123,7 @@ export default function Vendors() {
       else await addVendor(data);
       setIsModalOpen(false);
       setSelectedVendor(null);
+      await fetchPage({ force: true });
       push(selectedVendor ? "Vendor updated successfully" : "Vendor onboarded successfully", "success");
     } catch (err) {
       push(err?.response?.data?.detail || "Save failed", "error");
@@ -129,6 +133,8 @@ export default function Vendors() {
   const handleDelete = async () => {
     try {
       await removeVendor(selectedVendor.id);
+      if (vendors.length === 1 && offset > 0) setOffset(Math.max(0, offset - PAGE_SIZE));
+      else await fetchPage({ force: true });
       push("Vendor deleted", "success");
     } catch (err) {
       push(err?.response?.data?.detail || "Delete failed. Vendors linked to projects, RFQs or work orders cannot be deleted.", "error");

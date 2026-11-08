@@ -42,6 +42,7 @@ def test_project_create_with_descriptors_and_admin_write():
     ah = login("adm3@example.com", "Strong@123")
     r = client.post("/projects/", json={
         "project_code": "V3P-001", "date": "2026-09-21", "name": "V3 Project",
+        "project_pan": "ABCDE1234F",
         "client_name": "C", "engineer_in_charge": "E", "location": "L",
         "description": "Deep boreholes", "project_type": "INVESTIGATION",
         "priority": "HIGH", "currency": "INR"}, headers=ah)
@@ -62,6 +63,7 @@ def test_project_create_with_descriptors_and_admin_write():
 def test_project_status_lifecycle():
     r = client.post("/projects/", json={
         "project_code": "V3P-002", "date": "2026-09-21", "name": "Lifecycle",
+        "project_pan": "ABCDE1234F",
         "client_name": "C", "engineer_in_charge": "E", "location": "L"}, headers=ADMIN)
     pid = r.json()["id"]
     # legacy "Not Started" treated as DRAFT: DRAFT -> ACTIVE invalid
@@ -86,6 +88,7 @@ def test_primary_supervisor_assignment():
     s2 = _active_supervisor("prim2@example.com")
     r = client.post("/projects/", json={
         "project_code": "V3P-003", "date": "2026-09-21", "name": "Prim Proj",
+        "project_pan": "ABCDE1234F",
         "client_name": "C", "engineer_in_charge": "E", "location": "L"}, headers=ADMIN)
     pid = r.json()["id"]
     r = client.post("/users/assignments",

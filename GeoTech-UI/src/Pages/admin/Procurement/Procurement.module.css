@@ -325,6 +325,56 @@
   vertical-align: middle;
 }
 
+/* Column alignment — keeps headings and cells on the same axis. */
+.table th.colMoney,
+.table td.colMoney {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th.colCenter,
+.table td.colCenter {
+  text-align: center;
+}
+
+.table th.colActions,
+.table td.colActions {
+  text-align: right;
+  width: 132px;
+}
+
+/* work-order rows carry two actions (open + copy draft) */
+.table th.colActionsWide,
+.table td.colActionsWide {
+  width: 250px;
+}
+
+.versionTag {
+  display: inline-flex;
+  margin-left: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.rowSub {
+  display: block;
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .table tbody tr {
   transition: 0.2s ease;
 }
@@ -510,6 +560,20 @@
   padding: 0 24px 18px;
   font-size: 12px;
   color: var(--color-text-muted);
+}
+
+/* Muted, full-width helper inside a status action row. */
+.workflowNote {
+  flex: 1 1 100%;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 900px) {
+  .workflowNote {
+    flex: 1 1 260px;
+  }
 }
 
 .listPlain {

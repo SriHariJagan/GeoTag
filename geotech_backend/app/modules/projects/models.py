@@ -27,6 +27,15 @@ class Project(Base):
     target_depth_per_day = Column(Float, default=0)
     target_boreholes_per_day = Column(Float, default=0)
 
+    # --- Statutory identity (PAN mandatory on create, GSTIN optional) ---
+    project_pan = Column(String, nullable=True)
+    project_gst = Column(String, nullable=True)
+
+    # --- Field operations profile ---
+    number_of_rigs = Column(Integer, default=0)
+    rig_types = Column(Text, nullable=True)
+    area_of_working = Column(Text, nullable=True)
+
     status = Column(String, default="Not Started")
     progress = Column(Float, default=0)
     total_boreholes = Column(Integer, default=0)

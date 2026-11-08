@@ -59,6 +59,8 @@ def _cors_origins() -> list[str]:
         "https://geotech.com",     # Production frontend
         "http://localhost:5173",   # Development frontend
         "http://127.0.0.1:5173",
+        "http://localhost:5174",   # Vite auto-increment when 5173 is busy
+        "http://127.0.0.1:5174",
         "https://geotech1.vercel.app",
     }
     frontend = (settings.FRONTEND_URL or "").strip().rstrip("/")

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { authLogin, login as legacyLogin } from "../../api/auth.api";
 import { decodeToken } from "../../utils/jwt";
 import { normalizeRole } from "../../constants/permissions";
+import { clearQueryCache } from "../../utils/queryCache";
 
 const AuthContext = createContext(null);
 
@@ -14,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    clearQueryCache();
     setUser(null);
   };
 
@@ -68,6 +70,7 @@ export const AuthProvider = ({ children }) => {
 
     localStorage.setItem("token", access_token);
     localStorage.setItem("user", JSON.stringify(userData));
+    clearQueryCache();
 
     setUser(userData);
     return userData; // 🔥 important

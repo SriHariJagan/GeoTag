@@ -304,7 +304,9 @@ export default function ProjectDetails() {
           <div className={styles.heroMeta}>
             <span><FiMapPin /> {project.location || "-"}</span>
             <span><FiCalendar /> {project.date || "-"}</span>
-            <span><FiDollarSign /> {(project.project_budget ?? 0).toLocaleString()} {project.currency || "INR"}</span>
+            {project.project_budget != null && (
+              <span><FiDollarSign /> {Number(project.project_budget).toLocaleString()} {project.currency || "INR"}</span>
+            )}
           </div>
           <div className={styles.progressWrap}>
             <div className={styles.progressTop}>
@@ -393,8 +395,13 @@ export default function ProjectDetails() {
               <div><dt>Client</dt><dd>{project.client_name || "-"}</dd></div>
               <div><dt>Client representative</dt><dd>{project.engineer_in_charge || "-"}</dd></div>
               <div><dt>Location</dt><dd>{project.location || "-"}</dd></div>
-              <div><dt>Budget</dt><dd>{(project.project_budget ?? 0).toLocaleString()} {project.currency || "INR"}</dd></div>
+              {project.project_budget != null && (
+                <div><dt>Budget</dt><dd>{Number(project.project_budget).toLocaleString()} {project.currency || "INR"}</dd></div>
+              )}
               <div><dt>Type / Priority</dt><dd>{project.project_type || "-"} / {project.priority || "-"}</dd></div>
+              <div><dt>PAN / GSTIN</dt><dd>{project.project_pan || "-"} / {project.project_gst || "-"}</dd></div>
+              <div><dt>Rigs</dt><dd>{project.number_of_rigs ?? 0}{project.rig_types ? ` · ${project.rig_types}` : ""}</dd></div>
+              <div><dt>Area of working</dt><dd>{project.area_of_working || "-"}</dd></div>
               <div><dt>Boreholes</dt><dd>{project.completed_boreholes ?? 0} / {project.total_boreholes ?? 0}</dd></div>
               <div><dt>Planned</dt><dd>{project.planned_start_date || "-"} → {project.planned_end_date || "-"}</dd></div>
               <div><dt>Actual</dt><dd>{project.actual_start_date || "-"} → {project.actual_end_date || "-"}</dd></div>
@@ -753,8 +760,17 @@ export default function ProjectDetails() {
               <div className={styles.kpiGrid}>
                 <Kpi icon={<FiTool />} label="Machinery cost" value={`${Number(ledger.totals.machinery_total).toLocaleString()} ${ledger.currency}`} sub="per-day rates × utilized days" />
                 <Kpi icon={<FiDollarSign />} label="Extras & expenses" value={`${Number(ledger.totals.expenditure_total).toLocaleString()} ${ledger.currency}`} sub={`${ledger.expenditures.records.length} record(s)`} />
-                <Kpi icon={<FiActivity />} label="Total spent to date" value={`${Number(ledger.totals.grand_total).toLocaleString()} ${ledger.currency}`} sub={`budget ${Number(ledger.totals.budget).toLocaleString()}`} />
-                <Kpi icon={<FiCheckCircle />} label="Balance" value={`${Number(ledger.totals.balance).toLocaleString()} ${ledger.currency}`} sub="budget less spend" />
+                <Kpi
+                  icon={<FiActivity />}
+                  label="Total spent to date"
+                  value={`${Number(ledger.totals.grand_total).toLocaleString()} ${ledger.currency}`}
+                  sub={ledger.totals.budget != null
+                    ? `budget ${Number(ledger.totals.budget).toLocaleString()}`
+                    : "server-computed"}
+                />
+                {ledger.totals.balance != null && (
+                  <Kpi icon={<FiCheckCircle />} label="Balance" value={`${Number(ledger.totals.balance).toLocaleString()} ${ledger.currency}`} sub="budget less spend" />
+                )}
               </div>
 
               <div className={styles.card}>

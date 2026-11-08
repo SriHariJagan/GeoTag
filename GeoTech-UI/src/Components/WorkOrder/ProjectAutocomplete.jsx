@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FiChevronDown, FiFolderPlus, FiMapPin, FiSearch } from "react-icons/fi";
 import { searchProjects } from "../../api/projects.api";
+import { cached, queryKey } from "../../utils/queryCache";
 import { Popover, PopList } from "./Picker";
 import styles from "./Studio.module.css";
 
@@ -21,8 +22,12 @@ export default function ProjectAutocomplete({ value, onSelect, onReset, placehol
   const load = useCallback(async (term) => {
     setLoading(true);
     try {
-      const res = await searchProjects(term, 50);
-      setResults(res.data || []);
+      const rows = await cached(
+        queryKey("projects:search", { q: term, limit: 50 }),
+        () => searchProjects(term, 50).then((res) => res.data || []),
+        { ttl: 30_000 }
+      );
+      setResults(rows);
     } catch {
       setResults([]);
     } finally {

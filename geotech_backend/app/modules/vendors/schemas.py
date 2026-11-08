@@ -16,6 +16,32 @@ def _csv_known(v: Optional[str], allowed: set, field: str) -> Optional[str]:
     return ",".join(parts)
 
 
+class VendorContactInput(BaseModel):
+    """A vendor may expose several people; exactly one is the primary.
+
+    The primary contact is mirrored onto the legacy single-contact columns
+    (contact_person/phone/email/contact_designation) so existing document
+    snapshots and pickers keep working unchanged.
+    """
+
+    name: str
+    designation: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    alternate_phone: Optional[str] = None
+    is_primary: bool = False
+
+
+class VendorContactCreate(VendorContactInput):
+    pass
+
+
+class VendorContactResponse(VendorContactInput):
+    id: int
+    vendor_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
 class VendorBase(BaseModel):
     vendor_company: Optional[str] = None
     contact_person: Optional[str] = None
@@ -82,7 +108,7 @@ class VendorBase(BaseModel):
 
 
 class VendorCreate(VendorBase):
-    pass
+    contacts: List[VendorContactInput] = []
 
 
 class VendorUpdate(BaseModel):
@@ -118,6 +144,9 @@ class VendorUpdate(BaseModel):
     equipment_capacity: Optional[int] = None
     years_of_experience: Optional[float] = None
 
+    # None = leave contacts untouched; a list replaces the whole set.
+    contacts: Optional[List[VendorContactInput]] = None
+
     @field_validator("status")
     @classmethod
     def status_known(cls, v):
@@ -143,26 +172,12 @@ class VendorResponse(VendorBase):
     created_at: datetime
     project_names: List[str] = []
     compliance_overdue: bool = False
+    contacts: List[VendorContactResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
 
 # ---------- child entities ----------
-
-class VendorContactCreate(BaseModel):
-    name: str
-    designation: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-    alternate_phone: Optional[str] = None
-    is_primary: bool = False
-
-
-class VendorContactResponse(VendorContactCreate):
-    id: int
-    vendor_id: int
-    model_config = ConfigDict(from_attributes=True)
-
 
 class VendorExperienceCreate(BaseModel):
     project_name: str

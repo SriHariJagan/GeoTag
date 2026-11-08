@@ -45,6 +45,7 @@ def tw():
     _mkuser("t6pending@example.com", accept=False)
     r = client.post("/projects/", json={
         "project_code": "T6-GEO-001", "date": "2026-09-21", "name": "T6 Project",
+        "project_pan": "ABCDE1234F",
         "client_name": "C", "engineer_in_charge": "E", "location": "L",
         "project_budget": 1000000}, headers=ADMIN)
     assert r.status_code in (200, 201), r.text

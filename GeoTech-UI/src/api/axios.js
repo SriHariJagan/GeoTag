@@ -1,7 +1,16 @@
 import axios from "axios";
 
+const baseURL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+if (!import.meta.env.VITE_API_URL && import.meta.env.DEV) {
+  console.warn(
+    "[api] VITE_API_URL is missing (GeoTech-UI/.env). " +
+      `Falling back to ${baseURL}. Create GeoTech-UI/.env with VITE_API_URL=http://127.0.0.1:8000 and restart Vite.`
+  );
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL,
 });
 
 api.interceptors.request.use(

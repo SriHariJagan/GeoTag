@@ -433,7 +433,13 @@ def is_vendor_assigned(db: Session, project_id: int, user_id: int) -> bool:
         ProjectVendor.vendor_id.in_(org_ids)).first() is not None
 
 # -------------------- TRANSFORM PROJECT --------------------
-def transform_project(project: Project):
+def can_view_project_budget(user) -> bool:
+    """Budget is commercial-in-confidence: admins and monitors only."""
+    role = normalize_role(getattr(user, "role", "") if user is not None else "")
+    return role in ("SUPERADMIN", "ADMIN", "MONITOR")
+
+
+def transform_project(project: Project, *, include_budget: bool = True):
     return {
         "id": project.id,
         "project_code": project.project_code,
@@ -446,7 +452,7 @@ def transform_project(project: Project):
         "planned_end_date": project.planned_end_date,
         "actual_start_date": project.actual_start_date,
         "actual_end_date": project.actual_end_date,
-        "project_budget": project.project_budget,
+        "project_budget": project.project_budget if include_budget else None,
         "estimated_total_depth": project.estimated_total_depth,
         "target_depth_per_day": project.target_depth_per_day,
         "target_boreholes_per_day": project.target_boreholes_per_day,
@@ -458,6 +464,11 @@ def transform_project(project: Project):
         "project_type": project.project_type,
         "priority": project.priority,
         "currency": project.currency or "INR",
+        "project_pan": project.project_pan,
+        "project_gst": project.project_gst,
+        "number_of_rigs": project.number_of_rigs or 0,
+        "rig_types": project.rig_types,
+        "area_of_working": project.area_of_working,
         "supervisors": [
             {"id": s.supervisor.id, "full_name": s.supervisor.full_name,
              "email": s.supervisor.email} for s in project.supervisors
@@ -537,13 +548,16 @@ def transform_Full_project_Details(project: Project):
 
 
 # -------------------- COST LEDGER --------------------
-def get_cost_ledger(db: Session, project_id: int):
+def get_cost_ledger(db: Session, project_id: int, user=None):
     """Full spend history for a project in detail.
 
     Machinery: per-day rate (accepted-WO rate wins, else machine master rate)
     x distinct days the machine appears in daily execution (report machine or
     equipment rows). Extras: project expenditures grouped by category with
     weekly buckets. Never trusts frontend numbers — all server-computed.
+
+    Budget and balance are commercial-in-confidence and are null for
+    supervisors/vendors, even though they may view project spend.
     """
     from datetime import date as _date
     from app.modules.daily_execution.models import (
@@ -663,7 +677,8 @@ def get_cost_ledger(db: Session, project_id: int):
     awarded = [w for w in wo_list if w.status in (
         "ACCEPTED", "IN_PROGRESS", "COMPLETED", "CLOSED")]
     grand = round(machinery_total + exp_total, 2)
-    budget = float(project.project_budget or 0)
+    include_budget = can_view_project_budget(user) if user is not None else True
+    budget = float(project.project_budget or 0) if include_budget else None
     return {
         "project_id": project.id,
         "project_code": project.project_code,
@@ -685,7 +700,7 @@ def get_cost_ledger(db: Session, project_id: int):
                    "expenditure_total": exp_total,
                    "grand_total": grand,
                    "budget": budget,
-                   "balance": round(budget - grand, 2)},
+                   "balance": round(budget - grand, 2) if budget is not None else None},
     }
 
 

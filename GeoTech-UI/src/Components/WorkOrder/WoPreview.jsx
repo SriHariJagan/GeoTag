@@ -13,17 +13,15 @@ const money = (v) => (Number(v) || 0).toLocaleString("en-IN", { minimumFractionD
  */
 /* Editor section -> printed block. Keys match SECTIONS order in WoEditor. */
 const SECTION_BLOCK = {
-  company: BLOCKS.HEADER,
-  info: BLOCKS.TITLE,
   project: BLOCKS.META,
+  info: BLOCKS.TITLE,
   vendor: BLOCKS.VENDOR,
   subject: BLOCKS.SUBJECT,
   scope: BLOCKS.SCOPE,
   boq: BLOCKS.BOQ_HEAD,
   pay: BLOCKS.SEC_HEAD,
   terms: BLOCKS.SEC_HEAD,
-  accept: BLOCKS.ACCEPT,
-  sig: BLOCKS.SIG,
+  signoff: BLOCKS.ACCEPT,
 };
 
 export default function WoPreview({ view, zoom, onZoom, activeSection }) {
@@ -271,17 +269,26 @@ function SecPara({ title, text }) {
   );
 }
 
+// Header and each body row are separate tables (so rows can split across
+// printed pages), so every table needs the same column track definitions or
+// the cells drift out of line with the headings.
+function BoqCols() {
+  return (
+    <colgroup>
+      <col style={{ width: 34 }} />
+      <col />
+      <col style={{ width: 52 }} />
+      <col style={{ width: 52 }} />
+      <col style={{ width: 76 }} />
+      <col style={{ width: 88 }} />
+    </colgroup>
+  );
+}
+
 function BoqHead() {
   return (
     <table className={styles.dBoq}>
-      <colgroup>
-        <col style={{ width: 34 }} />
-        <col />
-        <col style={{ width: 52 }} />
-        <col style={{ width: 52 }} />
-        <col style={{ width: 76 }} />
-        <col style={{ width: 88 }} />
-      </colgroup>
+      <BoqCols />
       <thead>
         <tr><th>S.No.</th><th>Description</th><th className={styles.num}>Qty</th><th>Unit</th><th className={styles.num}>Rate</th><th className={styles.num}>Amount</th></tr>
       </thead>
@@ -292,6 +299,7 @@ function BoqHead() {
 function BoqRow({ item = {}, n }) {
   return (
     <table className={styles.dBoq}>
+      <BoqCols />
       <tbody>
         <tr>
           <td>{item.item_number || n}</td>

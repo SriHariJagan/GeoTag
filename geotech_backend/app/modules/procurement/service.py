@@ -790,6 +790,16 @@ def _serialize_wo(db: Session, wo: m.WorkOrder) -> dict:
             "vendor_snapshot", "project_snapshot", "company_snapshot"}
     d = {c.name: getattr(wo, c.name) for c in wo.__table__.columns if c.name not in skip}
     d["vendor_name"] = _vendor_name(db, wo.vendor_id) if wo.vendor_id else None
+    # Project label for lists — the WO keeps its own snapshot name, while the
+    # live project code is what admins search/scan by.
+    try:
+        from app.modules.projects.models import Project
+        project = db.query(Project).filter(Project.id == wo.project_id).first()
+        d["project_code"] = project.project_code if project else None
+        if not d.get("project_name") and project:
+            d["project_name"] = project.name
+    except Exception:
+        d["project_code"] = None
     d["payment_terms_list"] = _jloads(wo.payment_terms_json, [])
     d["general_terms"] = _jloads(wo.general_terms_json, [])
     d["vendor_override"] = _jloads_dict(wo.vendor_override_json)
@@ -1064,9 +1074,13 @@ def list_vendor_assignments(db: Session, user, project_id: int | None = None) ->
     else:
         raise HTTPException(status_code=403, detail="Not permitted")
     out = []
+    from app.modules.projects.models import Project
     for r in rows:
         d = {c.name: getattr(r, c.name) for c in r.__table__.columns}
         d["vendor_name"] = _vendor_name(db, r.vendor_id)
+        project = db.query(Project).filter(Project.id == r.project_id).first()
+        d["project_code"] = project.project_code if project else None
+        d["project_name"] = project.name if project else None
         out.append(d)
     return out
 

@@ -381,6 +381,7 @@ class WorkOrderResponse(BaseModel):
     parent_id: Optional[int] = None
     work_order_date: Optional[date] = None
     project_id: int
+    project_code: Optional[str] = None
     vendor_id: Optional[int] = None
     vendor_name: Optional[str] = None
     rfq_id: Optional[int] = None

@@ -39,6 +39,7 @@ def test_vendor_project_visibility_and_internal_stripping():
     hb = _vendor_user("eb@example.com", vb)
     pid = client.post("/projects/", json={
         "project_code": "EP-001", "date": "2026-09-21", "name": "E Proj",
+        "project_pan": "ABCDE1234F",
         "client_name": "C", "engineer_in_charge": "E", "location": "L"},
         headers=ADMIN).json()["id"]
 
